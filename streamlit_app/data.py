@@ -1,0 +1,141 @@
+"""Carga y preparación de datos para el dashboard del Caribe colombiano.
+
+Es el equivalente de la celda `# DATA` del notebook, pero sin geopandas --
+los .geojson se leen como diccionarios planos (json.load) y se filtran con
+comprensiones de listas. Esto evita depender de GDAL en el deploy (geopandas
+necesita paquetes de sistema que Streamlit Community Cloud no trae por
+defecto), sin perder nada de la lógica original.
+"""
+import json
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import streamlit as st
+
+DATA_DIR = Path(__file__).resolve().parent.parent / "DATA"
+
+CARIBE = ["LA GUAJIRA", "MAGDALENA", "CESAR", "ATLÁNTICO", "BOLÍVAR", "CÓRDOBA", "SUCRE"]
+
+# Mismo mapeo que en la celdota, para acortar los nombres de sector en la dona de PIB.
+NOMBRES_CORTOS_SECTOR = {
+    "Agricultura, ganadería, caza, silvicultura y pesca": "Agricultura, ganadería, caza, silvicultura y pesca",
+    "Explotación de minas y canteras": "Explotación de minas y canteras",
+    "Industrias manufactureras": "Industrias manufactureras",
+    "Suministro de electricidad, gas, vapor y aire acondicionado; distribución de agua; evacuación y tratamiento de aguas residuales, gestión de desechos y actividades de saneamiento ambiental": "Electricidad, gas, agua y saneamiento",
+    "Construcción": "Construcción",
+    "Comercio al por mayor y al por menor; reparación de vehículos automotores y motocicletas; transporte y almacenamiento; alojamiento y servicios de comida": "Comercio, transporte, alojamiento y comida",
+    "Información y comunicaciones": "Información y comunicaciones",
+    "Actividades financieras y de seguros": "Actividades financieras y de seguros",
+    "Actividades inmobiliarias": "Actividades inmobiliarias",
+    "Actividades profesionales, científicas y técnicas; actividades de servicios administrativos y de apoyo": "Act. profesionales, científicas y de apoyo",
+    "Administración pública y defensa; planes de seguridad social de afiliación obligatoria; educación; actividades de atención de la salud humana y de servicios sociales": "Adm. pública, educación y salud",
+    "Actividades artísticas, de entretenimiento y recreación y otras actividades de servicios; actividades de los hogares individuales en calidad de empleadores; actividades no diferenciadas de los hogares individuales como productores de bienes y servicios para uso propio": "Artísticas, entretenimiento y otros servicios",
+    "Impuestos": "Impuestos",
+}
+
+NOMBRES_ACTIVIDADES_MUNICIPIO = {
+    "actividades_primarias": "Actividades primarias",
+    "actividades_secundarias": "Actividades secundarias",
+    "actividades_terciarias": "Actividades terciarias",
+}
+
+ORDEN_GRUPOS_EDAD = [f"{i}-{i + 4}" for i in range(0, 100, 5)] + ["100+"]
+
+
+@st.cache_data
+def _load_geojson(filename: str) -> dict:
+    with open(DATA_DIR / filename, encoding="utf-8") as f:
+        geo = json.load(f)
+    # Normalizamos "nombre entidad" (con espacio, como viene del archivo) a
+    # "nombre_entidad" para que coincida con la convención de las tablas.
+    for feature in geo["features"]:
+        props = feature["properties"]
+        if "nombre entidad" in props:
+            props["nombre_entidad"] = props.pop("nombre entidad")
+    return geo
+
+
+def filtrar_geojson(geo: dict, mantener) -> dict:
+    """mantener: función(properties) -> bool"""
+    return {
+        "type": "FeatureCollection",
+        "features": [f for f in geo["features"] if mantener(f["properties"])],
+    }
+
+
+def geojson_municipios_de(mapa_mun_geo: dict, mun: pd.DataFrame, nombre_departamento: str) -> dict:
+    """Municipios de un departamento, geometría filtrada por (nombre, últimos 3
+    dígitos del código DANE) -- hay nombres de municipio repetidos entre
+    departamentos del Caribe (ej. VILLANUEVA existe en Bolívar y en La Guajira)
+    y el geojson solo trae el sufijo de 3 dígitos, así que filtrar solo por
+    nombre trae ambos."""
+    filas = mun[mun["nombre_departamento"] == nombre_departamento][["nombre_entidad", "codigo_dane"]].drop_duplicates()
+    codigos_cortos = filas["codigo_dane"].astype(str).str.zfill(5).str[-3:]
+    pares_validos = set(zip(filas["nombre_entidad"], codigos_cortos))
+    return filtrar_geojson(
+        mapa_mun_geo,
+        lambda p: (p["nombre_entidad"], p["codigo_dane"]) in pares_validos,
+    )
+
+
+@st.cache_data
+def load_all() -> dict:
+    mun_full = pd.read_csv(DATA_DIR / "indicadores_municipales.csv")
+    dep_full = pd.read_csv(DATA_DIR / "indicadores_departamentales.csv")
+
+    mun = mun_full[mun_full["nombre_departamento"].isin(CARIBE)].copy()
+    dep = dep_full[dep_full["nombre_entidad"].isin(CARIBE)].copy()
+    mun = mun[mun["anio"] != 2025]
+    dep = dep[dep["anio"] != 2025]
+
+    idc = pd.read_csv(DATA_DIR / "idc_departamental.csv", sep=";")
+    dep = dep.merge(idc, on=["nombre_entidad", "anio"], how="left")
+    idc_pilares = pd.read_csv(DATA_DIR / "idc_pilares_departamental.csv", sep=";")
+
+    icc = pd.read_csv(DATA_DIR / "icc_municipal.csv", sep=";")
+    mun = mun.merge(icc, on=["nombre_entidad", "anio"], how="left")
+    icc_pilares = pd.read_csv(DATA_DIR / "icc_pilares_municipal.csv", sep=";")
+
+    pib_sector = pd.read_csv(DATA_DIR / "pib_sector_departamental.csv", sep="|")
+    pib_sector["Departamento"] = pib_sector["Departamento"].str.upper()
+    pib_sector_caribe = pib_sector[pib_sector["Departamento"].isin(CARIBE)].copy()
+
+    piramide_dep = pd.read_csv(DATA_DIR / "piramide_departamental.csv", sep=";")
+    piramide_mun = pd.read_csv(DATA_DIR / "piramide_municipal.csv", sep=";")
+
+    for df in (mun, dep):
+        df[["poblacion_total", "poblacion_rural", "poblacion_urbana"]] = df[
+            ["poblacion_total", "poblacion_rural", "poblacion_urbana"]
+        ].astype(int)
+
+    mun = mun.assign(
+        log_poblacion=np.log10(mun["poblacion_total"]),
+        densidad_pob=mun["poblacion_total"] / mun["area_km2"],
+    )
+    mun["log_densidad"] = np.log10(mun["densidad_pob"])
+
+    mapa_dep_geo = _load_geojson("departamento.geojson")
+    mapa_mun_geo = _load_geojson("municipio.geojson")
+
+    pilares_disponibles = [c for c in idc_pilares.columns if c not in ("nombre_entidad", "anio")]
+    departamentos_pais = sorted(idc_pilares["nombre_entidad"].unique().tolist())
+    ciudades_icc = sorted(icc_pilares["nombre_entidad"].unique().tolist())
+    anios_disponibles = sorted(dep["anio"].dropna().unique().astype(int).tolist())
+
+    return {
+        "mun": mun,
+        "dep": dep,
+        "idc_pilares": idc_pilares,
+        "icc_pilares": icc_pilares,
+        "pib_sector_caribe": pib_sector_caribe,
+        "piramide_dep": piramide_dep,
+        "piramide_mun": piramide_mun,
+        "mapa_dep_geo": mapa_dep_geo,
+        "mapa_mun_geo": mapa_mun_geo,
+        "pilares_disponibles": pilares_disponibles,
+        "departamentos_pais": departamentos_pais,
+        "ciudades_icc": ciudades_icc,
+        "anios_disponibles": anios_disponibles,
+        "caribe": CARIBE,
+    }
