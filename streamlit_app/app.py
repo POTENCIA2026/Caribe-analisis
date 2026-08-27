@@ -416,6 +416,14 @@ elif variable_activa == "PIB":
             if fig_pastel is not None:
                 st.plotly_chart(fig_pastel, width="stretch")
 
+        # Dato fijo, siempre visible sin importar el modo del toggle ni el
+        # departamento/municipio seleccionado: qué tanto pesa el Caribe en
+        # el PIB del país.
+        valor_caribe_total = dep[dep["anio"] == anio_sel]["pib"].sum()
+        valor_nacional_total = dep_nacional[dep_nacional["anio"] == anio_sel]["pib"].sum()
+        pct_caribe_nacional = (valor_caribe_total / valor_nacional_total * 100) if valor_nacional_total else 0
+        st.caption(f"La Región Caribe representa el {pct_caribe_nacional:.1f}% del PIB nacional en {anio_sel}.")
+
         st.segmented_control(
             "Vista de participación", ["Sectorial", "Regional/Nacional"], default="Sectorial",
             key="modo_participacion_pib", label_visibility="collapsed",
