@@ -403,26 +403,26 @@ elif variable_activa == "PIB":
                 resto_nacional = max(valor_nacional - valor_caribe, 0)
                 pct_nacional = (valor_dep / valor_nacional * 100) if valor_nacional else 0
                 pct_caribe = (valor_dep / valor_caribe * 100) if valor_caribe else 0
+                pct_caribe_nacional = (valor_caribe / valor_nacional * 100) if valor_nacional else 0
                 hover = (
                     f"<b>{nombre_dep}</b><br>{pct_nacional:.1f}% de Colombia<br>"
                     f"{pct_caribe:.1f}% de la Región Caribe<extra></extra>"
+                )
+                # El segmento azul oscuro ("Resto de la Región Caribe") siempre
+                # informa, al pasar el mouse, qué tanto pesa toda la Región
+                # Caribe (no solo el departamento) en el PIB nacional.
+                hover_medio = (
+                    f"<b>Región Caribe</b><br>{pct_caribe_nacional:.1f}% del PIB nacional "
+                    f"es de la Región Caribe<extra></extra>"
                 )
                 fig_pastel = build_pastel_participacion(
                     nombre_dep, "Resto de la Región Caribe", "Resto de Colombia",
                     valor_dep, resto_caribe, resto_nacional,
                     f"Participación de {nombre_dep} en la Región Caribe y Colombia ({anio_sel})",
-                    hover,
+                    hover, texto_hover_medio=hover_medio,
                 )
             if fig_pastel is not None:
                 st.plotly_chart(fig_pastel, width="stretch")
-
-        # Dato fijo, siempre visible sin importar el modo del toggle ni el
-        # departamento/municipio seleccionado: qué tanto pesa el Caribe en
-        # el PIB del país.
-        valor_caribe_total = dep[dep["anio"] == anio_sel]["pib"].sum()
-        valor_nacional_total = dep_nacional[dep_nacional["anio"] == anio_sel]["pib"].sum()
-        pct_caribe_nacional = (valor_caribe_total / valor_nacional_total * 100) if valor_nacional_total else 0
-        st.caption(f"La Región Caribe representa el {pct_caribe_nacional:.1f}% del PIB nacional en {anio_sel}.")
 
         st.segmented_control(
             "Vista de participación", ["Sectorial", "Regional/Nacional"], default="Sectorial",

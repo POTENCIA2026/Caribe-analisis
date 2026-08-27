@@ -251,7 +251,7 @@ COLOR_PARTICIPACION_CONTRASTE = "#eb6834"  # naranja -- el resto del universo ma
 
 def build_pastel_participacion(etiqueta_resaltada, etiqueta_resto_medio, etiqueta_resto_mayor,
                                 valor_resaltado, valor_resto_medio, valor_resto_mayor, titulo,
-                                texto_hover_resaltado):
+                                texto_hover_resaltado, texto_hover_medio=None):
     labels = [etiqueta_resto_mayor, etiqueta_resto_medio, etiqueta_resaltada]
     values = [valor_resto_mayor, valor_resto_medio, valor_resaltado]
     colores = [
@@ -261,7 +261,7 @@ def build_pastel_participacion(etiqueta_resaltada, etiqueta_resto_medio, etiquet
     ]
     hovertext = [
         f"<b>{etiqueta_resto_mayor}</b><br>{valor_resto_mayor:,.0f}<extra></extra>",
-        f"<b>{etiqueta_resto_medio}</b><br>{valor_resto_medio:,.0f}<extra></extra>",
+        texto_hover_medio or f"<b>{etiqueta_resto_medio}</b><br>{valor_resto_medio:,.0f}<extra></extra>",
         texto_hover_resaltado,
     ]
     fig = go.Figure(
