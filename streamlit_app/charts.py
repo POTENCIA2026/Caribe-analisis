@@ -238,6 +238,44 @@ def build_pastel(labels, values, titulo, unidad="miles de millones COP"):
     return fig
 
 
+# ------------------------------------------------------------------
+# Dona de PARTICIPACIÓN (regional/nacional) -- 3 porciones: el "resto" del
+# universo mayor (contraste), el "resto" del universo intermedio (color
+# base), y la entidad resaltada (versión clara del color base). Ej. a nivel
+# departamental: resto de Colombia / resto del Caribe / este departamento.
+# A nivel municipal: resto del Caribe / resto del departamento / este municipio.
+# ------------------------------------------------------------------
+COLOR_PARTICIPACION_BASE = "#2a78d6"       # azul -- "el contenedor" (región o departamento)
+COLOR_PARTICIPACION_CONTRASTE = "#eb6834"  # naranja -- el resto del universo mayor (país o región)
+
+
+def build_pastel_participacion(etiqueta_resaltada, etiqueta_resto_medio, etiqueta_resto_mayor,
+                                valor_resaltado, valor_resto_medio, valor_resto_mayor, titulo,
+                                texto_hover_resaltado):
+    labels = [etiqueta_resto_mayor, etiqueta_resto_medio, etiqueta_resaltada]
+    values = [valor_resto_mayor, valor_resto_medio, valor_resaltado]
+    colores = [
+        COLOR_PARTICIPACION_CONTRASTE,
+        COLOR_PARTICIPACION_BASE,
+        _mezclar_con_blanco(COLOR_PARTICIPACION_BASE, 0.45),
+    ]
+    hovertext = [
+        f"<b>{etiqueta_resto_mayor}</b><br>{valor_resto_mayor:,.0f}<extra></extra>",
+        f"<b>{etiqueta_resto_medio}</b><br>{valor_resto_medio:,.0f}<extra></extra>",
+        texto_hover_resaltado,
+    ]
+    fig = go.Figure(
+        go.Pie(
+            labels=labels, values=values, hole=0.35,
+            marker=dict(colors=colores),
+            textinfo="none",
+            hovertemplate=[h if h.endswith("<extra></extra>") else h + "<extra></extra>" for h in hovertext],
+        )
+    )
+    fig.update_layout(title=titulo, height=420, margin=dict(l=20, r=20, t=50, b=20), showlegend=True)
+    return fig
+
+
 def build_pastel_municipal(fila, titulo):
     columnas = ["actividades_primarias", "actividades_secundarias", "actividades_terciarias"]
     etiquetas = {"actividades_primarias": "Actividades primarias",
