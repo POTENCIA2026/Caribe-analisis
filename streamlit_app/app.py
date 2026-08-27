@@ -7,6 +7,7 @@ import streamlit as st
 
 from data import (
     NOMBRES_CORTOS_SECTOR,
+    NOMBRES_RAMA_CORTOS,
     ORDEN_GRUPOS_EDAD,
     filtrar_geojson,
     geojson_municipios_de,
@@ -34,6 +35,9 @@ icc_pilares = data["icc_pilares"]
 pib_sector_caribe = data["pib_sector_caribe"]
 piramide_dep = data["piramide_dep"]
 piramide_mun = data["piramide_mun"]
+geih_tasas = data["geih_tasas"]
+geih_ocupados_rama = data["geih_ocupados_rama"]
+capitales = data["capitales"]
 pilares_disponibles = data["pilares_disponibles"]
 departamentos_pais = data["departamentos_pais"]
 ciudades_icc = data["ciudades_icc"]
@@ -116,7 +120,8 @@ with col_mapa:
     else:
         mapa_mun_geo = geojson_municipios_de(data["mapa_mun_geo"], mun, st.session_state["departamento_actual"])
         colores, nombres_mun = calcular_colores_municipios(
-            mun, mapa_mun_geo, st.session_state["departamento_actual"], anio_sel, st.session_state["variable_activa"]
+            mun, mapa_mun_geo, st.session_state["departamento_actual"], anio_sel, st.session_state["variable_activa"],
+            geih_tasas=geih_tasas,
         )
         fig_municipios = build_municipios_map(mapa_mun_geo, colores, st.session_state["departamento_actual"])
         evento_mun = st.plotly_chart(fig_municipios, on_select="rerun", key="click_mapa_mun", selection_mode="points")
@@ -133,6 +138,8 @@ with col_mapa:
             st.caption("Color = densidad poblacional (escala logarítmica), más oscuro = más denso")
         elif st.session_state["variable_activa"] == "Competitividad":
             st.caption("El ICC solo evalúa la ciudad capital de cada departamento — el resto queda en gris.")
+        elif st.session_state["variable_activa"] == "Mercado laboral":
+            st.caption("La GEIH solo evalúa la ciudad capital de cada departamento — el resto queda en gris.")
 
     if st.button(
         "◀ Volver al mapa departamental" if st.session_state["vista_municipios"] else "Ver municipios ▶",
@@ -163,6 +170,20 @@ if not st.session_state["interactuado"]:
 else:
     municipios_fmt = mun[mun["nombre_departamento"] == nombre_dep]["nombre_entidad"].nunique()
 
+# La GEIH (mercado laboral) solo cubre la ciudad capital de cada
+# departamento -- si hay un municipio seleccionado que NO es la capital, no
+# hay dato (igual que Competitividad/ICC, pero sin ni siquiera un valor
+# departamental de respaldo: la GEIH no publica agregados por departamento).
+capital_dep = capitales.get(nombre_dep)
+ciudad_ml = st.session_state["municipio_actual"]
+if ciudad_ml and ciudad_ml != capital_dep:
+    ciudad_ml = None
+elif not ciudad_ml:
+    ciudad_ml = capital_dep
+
+fila_geih = geih_tasas[(geih_tasas["nombre_entidad"] == ciudad_ml) & (geih_tasas["anio"] == anio_sel)] if ciudad_ml else pd.DataFrame()
+mercado_laboral_fmt = f"TD {fila_geih.iloc[0]['td']:.1f}%" if not fila_geih.empty and pd.notna(fila_geih.iloc[0]["td"]) else "—"
+
 # Si hay un municipio seleccionado, PIB y Competitividad se sobreescriben con
 # el dato municipal (igual que en el notebook); Población se queda a nivel
 # departamental salvo la pirámide, que sí tiene su propio overlay municipal.
@@ -187,7 +208,7 @@ if municipio_actual:
 st.subheader(nombre_dep if not municipio_actual else f"{municipio_actual} — {nombre_dep}")
 st.caption(f"Perfil {'municipal' if municipio_actual else 'departamental'} — {anio_sel}")
 
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3, c4, c5 = st.columns(5)
 
 
 def _tarjeta(col, etiqueta, valor, activa, key):
@@ -205,7 +226,10 @@ if _tarjeta(c2, "PIB", pib_fmt, st.session_state["variable_activa"] == "PIB", "t
 if _tarjeta(c3, "Competitividad", competitividad_fmt, st.session_state["variable_activa"] == "Competitividad", "tab_competitividad"):
     st.session_state["variable_activa"] = "Competitividad"
     st.rerun()
-with c4:
+if _tarjeta(c4, "Mercado laboral", mercado_laboral_fmt, st.session_state["variable_activa"] == "Mercado laboral", "tab_mercado_laboral"):
+    st.session_state["variable_activa"] = "Mercado laboral"
+    st.rerun()
+with c5:
     st.button(f"Municipios\n{municipios_fmt}", disabled=True, width="stretch")
 
 st.divider()
@@ -317,6 +341,40 @@ elif variable_activa == "PIB":
                         else:
                             st.session_state["sector_actual"] = {"nombre": sector_click, "color": color_click}
                         st.rerun()
+
+elif variable_activa == "Mercado laboral":
+    if not ciudad_ml:
+        st.info(
+            f"La GEIH no tiene dato para este municipio -- solo cubre la ciudad capital "
+            f"({capital_dep or 'sin capital definida'})."
+        )
+    else:
+        with col_izq:
+            serie = geih_tasas[geih_tasas["nombre_entidad"] == ciudad_ml].dropna(subset=["td"]).sort_values("anio")
+            fig_linea = build_evolution_line(
+                serie["anio"], serie["td"], anio_sel,
+                f"Evolución de la Tasa de Desocupación — {ciudad_ml}", "Tasa de desocupación (%)",
+                unidad="%",
+            )
+            st.plotly_chart(fig_linea, width="stretch")
+            st.caption("Trimestre móvil Oct-Dic de cada año (GEIH, DANE).")
+
+        with col_der:
+            fila_rama = geih_ocupados_rama[
+                (geih_ocupados_rama["nombre_entidad"] == ciudad_ml) & (geih_ocupados_rama["anio"] == anio_sel)
+            ]
+            if fila_rama.empty:
+                st.info(f"Sin dato de ocupados por sector para {ciudad_ml} en {anio_sel}.")
+            else:
+                fila = fila_rama.iloc[0]
+                ramas = list(NOMBRES_RAMA_CORTOS.keys())
+                valores_rama = fila[ramas].dropna()
+                etiquetas = [NOMBRES_RAMA_CORTOS[c] for c in valores_rama.index]
+                fig_pastel_ml = build_pastel(
+                    etiquetas, valores_rama.values, f"Ocupados por sector — {ciudad_ml} ({anio_sel})"
+                )
+                st.plotly_chart(fig_pastel_ml, width="stretch")
+                st.caption("Miles de personas, trimestre móvil Oct-Dic (GEIH, DANE).")
 
 else:  # Población
     with col_izq:

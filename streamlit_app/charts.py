@@ -104,7 +104,10 @@ def _color_actividad_municipio(fila):
     return _mezclar_con_blanco(columnas[dominante], t)
 
 
-def calcular_colores_municipios(mun, mapa_geo, nombre_departamento, anio_sel, variable):
+COLOR_MERCADO_LABORAL = "#008300"  # verde
+
+
+def calcular_colores_municipios(mun, mapa_geo, nombre_departamento, anio_sel, variable, geih_tasas=None):
     nombres_mun = [f["properties"]["nombre_entidad"] for f in mapa_geo["features"]]
     datos_anio = mun[
         (mun["nombre_departamento"] == nombre_departamento) & (mun["anio"] == anio_sel)
@@ -142,6 +145,26 @@ def calcular_colores_municipios(mun, mapa_geo, nombre_departamento, anio_sel, va
             valor = datos_anio.loc[nombre_mun, "indice_competitividad"]
             t = min(1.0, max(0.0, valor / 10))
             colores.append(_mezclar_con_blanco(COLOR_COMPETITIVIDAD, t))
+        return colores, nombres_mun
+
+    if variable == "Mercado laboral":
+        # La GEIH solo cubre la ciudad capital -- escala absoluta (0%-30% de
+        # tasa de desocupación, un techo realista para el rango observado en
+        # Colombia) igual razonamiento que Competitividad: con un solo dato
+        # disponible no hay contra qué normalizar con un min-max relativo.
+        datos_geih_anio = (
+            geih_tasas[geih_tasas["anio"] == anio_sel].set_index("nombre_entidad")
+            if geih_tasas is not None else pd.DataFrame()
+        )
+        TECHO_TD = 30
+        colores = []
+        for nombre_mun in nombres_mun:
+            if nombre_mun not in datos_geih_anio.index or pd.isna(datos_geih_anio.loc[nombre_mun, "td"]):
+                colores.append(COLOR_SIN_DATO)
+                continue
+            valor = datos_geih_anio.loc[nombre_mun, "td"]
+            t = min(1.0, max(0.0, valor / TECHO_TD))
+            colores.append(_mezclar_con_blanco(COLOR_MERCADO_LABORAL, t))
         return colores, nombres_mun
 
     return [COLOR_NEUTRO] * len(nombres_mun), nombres_mun

@@ -42,6 +42,36 @@ NOMBRES_ACTIVIDADES_MUNICIPIO = {
 
 ORDEN_GRUPOS_EDAD = [f"{i}-{i + 4}" for i in range(0, 100, 5)] + ["100+"]
 
+# Ciudad capital de cada departamento -- la GEIH (mercado laboral) solo trae
+# dato para estas 7 ciudades, no para el resto de municipios ni para el
+# departamento agregado (igual que pasa con el ICC de Competitividad).
+CAPITALES = {
+    "ATLÁNTICO": "BARRANQUILLA",
+    "BOLÍVAR": "CARTAGENA DE INDIAS",
+    "CESAR": "VALLEDUPAR",
+    "CÓRDOBA": "MONTERÍA",
+    "LA GUAJIRA": "RIOHACHA",
+    "MAGDALENA": "SANTA MARTA",
+    "SUCRE": "SINCELEJO",
+}
+
+NOMBRES_RAMA_CORTOS = {
+    "Agricultura, ganadería, caza, silvicultura y pesca": "Agricultura, ganadería, caza, silvicultura y pesca",
+    "Explotación de minas y canteras": "Explotación de minas y canteras",
+    "Industrias manufactureras": "Industrias manufactureras",
+    "Suministro de electricidad gas, agua y gestión de desechos": "Electricidad, gas, agua y saneamiento",
+    "Construcción": "Construcción",
+    "Comercio y reparación de vehículos": "Comercio y reparación de vehículos",
+    "Alojamiento y servicios de comida": "Alojamiento y servicios de comida",
+    "Transporte y almacenamiento": "Transporte y almacenamiento",
+    "Información y comunicaciones": "Información y comunicaciones",
+    "Actividades financieras y de seguros": "Actividades financieras y de seguros",
+    "Actividades inmobiliarias": "Actividades inmobiliarias",
+    "Actividades profesionales, científicas, técnicas y servicios administrativos": "Act. profesionales, científicas y de apoyo",
+    "Administración pública y defensa, educación y atención de la salud humana": "Adm. pública, educación y salud",
+    "Actividades artísticas, entretenimiento, recreación y otras actividades de servicios": "Artísticas, entretenimiento y otros servicios",
+}
+
 
 @st.cache_data
 def _load_geojson(filename: str) -> dict:
@@ -104,6 +134,11 @@ def load_all() -> dict:
     piramide_dep = pd.read_csv(DATA_DIR / "piramide_departamental.csv", sep=";")
     piramide_mun = pd.read_csv(DATA_DIR / "piramide_municipal.csv", sep=";")
 
+    # GEIH (mercado laboral) -- solo cubre las 7 ciudades capitales, no todo
+    # el departamento ni los demás municipios (igual que el ICC).
+    geih_tasas = pd.read_csv(DATA_DIR / "geih_mercado_laboral_ciudades.csv", sep=";")
+    geih_ocupados_rama = pd.read_csv(DATA_DIR / "geih_ocupados_rama_ciudades.csv", sep=";")
+
     for df in (mun, dep):
         df[["poblacion_total", "poblacion_rural", "poblacion_urbana"]] = df[
             ["poblacion_total", "poblacion_rural", "poblacion_urbana"]
@@ -131,11 +166,14 @@ def load_all() -> dict:
         "pib_sector_caribe": pib_sector_caribe,
         "piramide_dep": piramide_dep,
         "piramide_mun": piramide_mun,
+        "geih_tasas": geih_tasas,
+        "geih_ocupados_rama": geih_ocupados_rama,
         "mapa_dep_geo": mapa_dep_geo,
         "mapa_mun_geo": mapa_mun_geo,
         "pilares_disponibles": pilares_disponibles,
         "departamentos_pais": departamentos_pais,
         "ciudades_icc": ciudades_icc,
         "anios_disponibles": anios_disponibles,
+        "capitales": CAPITALES,
         "caribe": CARIBE,
     }
