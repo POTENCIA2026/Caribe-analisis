@@ -181,9 +181,6 @@ if ciudad_ml and ciudad_ml != capital_dep:
 elif not ciudad_ml:
     ciudad_ml = capital_dep
 
-fila_geih = geih_tasas[(geih_tasas["nombre_entidad"] == ciudad_ml) & (geih_tasas["anio"] == anio_sel)] if ciudad_ml else pd.DataFrame()
-mercado_laboral_fmt = f"{fila_geih.iloc[0]['td']:.1f}%" if not fila_geih.empty and pd.notna(fila_geih.iloc[0]["td"]) else "—"
-
 # Si hay un municipio seleccionado, PIB y Competitividad se sobreescriben con
 # el dato municipal (igual que en el notebook); Población se queda a nivel
 # departamental salvo la pirámide, que sí tiene su propio overlay municipal.
@@ -214,7 +211,8 @@ c1, c2, c3, c4, c5 = st.columns(5)
 def _tarjeta(col, etiqueta, valor, activa, key):
     with col:
         tipo = "primary" if activa else "secondary"
-        return st.button(f"{etiqueta}\n{valor}", key=key, type=tipo, width="stretch")
+        texto = f"{etiqueta}\n{valor}" if valor else etiqueta
+        return st.button(texto, key=key, type=tipo, width="stretch")
 
 
 if _tarjeta(c1, "Población", poblacion_fmt, st.session_state["variable_activa"] == "Población", "tab_poblacion"):
@@ -226,7 +224,7 @@ if _tarjeta(c2, "PIB", pib_fmt, st.session_state["variable_activa"] == "PIB", "t
 if _tarjeta(c3, "Competitividad", competitividad_fmt, st.session_state["variable_activa"] == "Competitividad", "tab_competitividad"):
     st.session_state["variable_activa"] = "Competitividad"
     st.rerun()
-if _tarjeta(c4, "Mercado laboral", mercado_laboral_fmt, st.session_state["variable_activa"] == "Mercado laboral", "tab_mercado_laboral"):
+if _tarjeta(c4, "Mercado laboral", "", st.session_state["variable_activa"] == "Mercado laboral", "tab_mercado_laboral"):
     st.session_state["variable_activa"] = "Mercado laboral"
     st.rerun()
 with c5:
