@@ -101,57 +101,88 @@ col_mapa, col_grafico = st.columns([1, 1])
 # MAPA
 # ------------------------------------------------------------------
 with col_mapa:
-    if not st.session_state["vista_municipios"]:
-        nombres_caribe = [f["properties"]["nombre_entidad"] for f in mapa_caribe_geo["features"]]
-        comparar_dep = (
-            st.session_state["comparar_con"]
-            if st.session_state["variable_activa"] == "Competitividad" and st.session_state["comparar_con"] != "Ninguno"
-            else None
-        )
-        fig_mapa = build_department_map(
-            mapa_caribe_geo, caribe, st.session_state["departamento_actual"], comparar_dep
-        )
-        evento_mapa = st.plotly_chart(fig_mapa, on_select="rerun", key="click_mapa_dep", selection_mode="points")
-        nuevo_dep = _procesar_click(evento_mapa, nombres_caribe, "_ultimo_click_mapa_dep")
-        if nuevo_dep:
-            st.session_state["interactuado"] = True
-            st.session_state["departamento_actual"] = nuevo_dep
+    col_mapa_viz, col_mapa_lista = st.columns([3, 2])
+
+    with col_mapa_viz:
+        if not st.session_state["vista_municipios"]:
+            nombres_caribe = [f["properties"]["nombre_entidad"] for f in mapa_caribe_geo["features"]]
+            comparar_dep = (
+                st.session_state["comparar_con"]
+                if st.session_state["variable_activa"] == "Competitividad" and st.session_state["comparar_con"] != "Ninguno"
+                else None
+            )
+            fig_mapa = build_department_map(
+                mapa_caribe_geo, caribe, st.session_state["departamento_actual"], comparar_dep
+            )
+            evento_mapa = st.plotly_chart(fig_mapa, on_select="rerun", key="click_mapa_dep", selection_mode="points")
+            nuevo_dep = _procesar_click(evento_mapa, nombres_caribe, "_ultimo_click_mapa_dep")
+            if nuevo_dep:
+                st.session_state["interactuado"] = True
+                st.session_state["departamento_actual"] = nuevo_dep
+                st.session_state["municipio_actual"] = None
+                st.session_state["sector_actual"] = None
+                st.rerun()
+        else:
+            mapa_mun_geo = geojson_municipios_de(data["mapa_mun_geo"], mun, st.session_state["departamento_actual"])
+            colores, nombres_mun = calcular_colores_municipios(
+                mun, mapa_mun_geo, st.session_state["departamento_actual"], anio_sel, st.session_state["variable_activa"],
+                geih_tasas=geih_tasas,
+            )
+            fig_municipios = build_municipios_map(mapa_mun_geo, colores, st.session_state["departamento_actual"])
+            evento_mun = st.plotly_chart(fig_municipios, on_select="rerun", key="click_mapa_mun", selection_mode="points")
+            nuevo_mun = _procesar_click(evento_mun, nombres_mun, "_ultimo_click_mapa_mun")
+            if nuevo_mun:
+                st.session_state["municipio_actual"] = nuevo_mun
+                st.session_state["sector_actual"] = None
+                st.rerun()
+
+            # leyenda del mapa municipal
+            if st.session_state["variable_activa"] == "PIB":
+                st.caption("Color = actividad predominante · intensidad = su participación en el valor agregado")
+            elif st.session_state["variable_activa"] == "Población":
+                st.caption("Color = densidad poblacional (escala logarítmica), más oscuro = más denso")
+            elif st.session_state["variable_activa"] == "Competitividad":
+                st.caption("El ICC solo evalúa la ciudad capital de cada departamento — el resto queda en gris.")
+            elif st.session_state["variable_activa"] == "Mercado laboral":
+                st.caption("La GEIH solo evalúa la ciudad capital de cada departamento — el resto queda en gris.")
+
+        if st.button(
+            "◀ Volver al mapa departamental" if st.session_state["vista_municipios"] else "Ver municipios ▶",
+            width="stretch",
+        ):
+            st.session_state["vista_municipios"] = not st.session_state["vista_municipios"]
             st.session_state["municipio_actual"] = None
             st.session_state["sector_actual"] = None
-            st.rerun()
-    else:
-        mapa_mun_geo = geojson_municipios_de(data["mapa_mun_geo"], mun, st.session_state["departamento_actual"])
-        colores, nombres_mun = calcular_colores_municipios(
-            mun, mapa_mun_geo, st.session_state["departamento_actual"], anio_sel, st.session_state["variable_activa"],
-            geih_tasas=geih_tasas,
-        )
-        fig_municipios = build_municipios_map(mapa_mun_geo, colores, st.session_state["departamento_actual"])
-        evento_mun = st.plotly_chart(fig_municipios, on_select="rerun", key="click_mapa_mun", selection_mode="points")
-        nuevo_mun = _procesar_click(evento_mun, nombres_mun, "_ultimo_click_mapa_mun")
-        if nuevo_mun:
-            st.session_state["municipio_actual"] = nuevo_mun
-            st.session_state["sector_actual"] = None
+            st.session_state["comparar_con"] = "Ninguno"
             st.rerun()
 
-        # leyenda del mapa municipal
-        if st.session_state["variable_activa"] == "PIB":
-            st.caption("Color = actividad predominante · intensidad = su participación en el valor agregado")
-        elif st.session_state["variable_activa"] == "Población":
-            st.caption("Color = densidad poblacional (escala logarítmica), más oscuro = más denso")
-        elif st.session_state["variable_activa"] == "Competitividad":
-            st.caption("El ICC solo evalúa la ciudad capital de cada departamento — el resto queda en gris.")
-        elif st.session_state["variable_activa"] == "Mercado laboral":
-            st.caption("La GEIH solo evalúa la ciudad capital de cada departamento — el resto queda en gris.")
-
-    if st.button(
-        "◀ Volver al mapa departamental" if st.session_state["vista_municipios"] else "Ver municipios ▶",
-        width="stretch",
-    ):
-        st.session_state["vista_municipios"] = not st.session_state["vista_municipios"]
-        st.session_state["municipio_actual"] = None
-        st.session_state["sector_actual"] = None
-        st.session_state["comparar_con"] = "Ninguno"
-        st.rerun()
+    # Lista clickeable -- la misma selección que se hace tocando el mapa,
+    # pero como botones normales (sin desplegable) para quien prefiera
+    # buscar el nombre en vez de ubicarlo en el mapa.
+    with col_mapa_lista:
+        if not st.session_state["vista_municipios"]:
+            st.caption("Departamentos")
+            for nombre in sorted(caribe):
+                activo = nombre == st.session_state["departamento_actual"]
+                if st.button(nombre, key=f"btn_dep_{nombre}", type="primary" if activo else "secondary", width="stretch"):
+                    if not activo:
+                        st.session_state["interactuado"] = True
+                        st.session_state["departamento_actual"] = nombre
+                        st.session_state["municipio_actual"] = None
+                        st.session_state["sector_actual"] = None
+                        st.rerun()
+        else:
+            dep_lista = st.session_state["departamento_actual"]
+            nombres_mun_lista = sorted(mun[mun["nombre_departamento"] == dep_lista]["nombre_entidad"].unique())
+            st.caption(f"Municipios de {dep_lista}")
+            with st.container(height=430):
+                for nombre in nombres_mun_lista:
+                    activo = nombre == st.session_state["municipio_actual"]
+                    if st.button(nombre, key=f"btn_mun_{nombre}", type="primary" if activo else "secondary", width="stretch"):
+                        if not activo:
+                            st.session_state["municipio_actual"] = nombre
+                            st.session_state["sector_actual"] = None
+                            st.rerun()
 
 # ------------------------------------------------------------------
 # TARJETAS (Población / PIB / Competitividad / Municipios)
