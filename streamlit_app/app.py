@@ -411,10 +411,7 @@ elif variable_activa == "PIB":
                 # El segmento azul oscuro ("Resto de la Región Caribe") siempre
                 # informa, al pasar el mouse, qué tanto pesa toda la Región
                 # Caribe (no solo el departamento) en el PIB nacional.
-                hover_medio = (
-                    f"<b>Región Caribe</b><br>{pct_caribe_nacional:.1f}% del PIB nacional "
-                    f"es de la Región Caribe<extra></extra>"
-                )
+                hover_medio = f"<b>Región Caribe</b><br>{pct_caribe_nacional:.1f}% de Colombia<extra></extra>"
                 fig_pastel = build_pastel_participacion(
                     nombre_dep, "Resto de la Región Caribe", "Resto de Colombia",
                     valor_dep, resto_caribe, resto_nacional,
