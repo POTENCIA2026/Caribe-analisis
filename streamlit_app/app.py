@@ -371,7 +371,8 @@ elif variable_activa == "Mercado laboral":
                 valores_rama = fila[ramas].dropna()
                 etiquetas = [NOMBRES_RAMA_CORTOS[c] for c in valores_rama.index]
                 fig_pastel_ml = build_pastel(
-                    etiquetas, valores_rama.values, f"Ocupados por sector — {ciudad_ml} ({anio_sel})"
+                    etiquetas, valores_rama.values, f"Ocupados por sector — {ciudad_ml} ({anio_sel})",
+                    unidad="miles de personas",
                 )
                 st.plotly_chart(fig_pastel_ml, width="stretch")
                 st.caption("Miles de personas, trimestre móvil Oct-Dic (GEIH, DANE).")

@@ -225,13 +225,13 @@ def build_evolution_line(x, y, anio_actual, titulo, y_titulo, color_linea=COLOR_
 # ------------------------------------------------------------------
 # Dona de PIB por sector
 # ------------------------------------------------------------------
-def build_pastel(labels, values, titulo):
+def build_pastel(labels, values, titulo, unidad="miles de millones COP"):
     fig = go.Figure(
         go.Pie(
             labels=labels, values=values, hole=0.35,
             marker=dict(colors=px.colors.qualitative.Set3),
             textinfo="none",
-            hovertemplate="<b>%{label}</b><br>%{value:,.0f} miles de millones COP<br>%{percent}<extra></extra>",
+            hovertemplate=f"<b>%{{label}}</b><br>%{{value:,.0f}} {unidad}<br>%{{percent}}<extra></extra>",
         )
     )
     fig.update_layout(title=titulo, height=420, margin=dict(l=20, r=20, t=50, b=20), showlegend=True)
