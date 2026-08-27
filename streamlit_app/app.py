@@ -182,7 +182,7 @@ elif not ciudad_ml:
     ciudad_ml = capital_dep
 
 fila_geih = geih_tasas[(geih_tasas["nombre_entidad"] == ciudad_ml) & (geih_tasas["anio"] == anio_sel)] if ciudad_ml else pd.DataFrame()
-mercado_laboral_fmt = f"TD {fila_geih.iloc[0]['td']:.1f}%" if not fila_geih.empty and pd.notna(fila_geih.iloc[0]["td"]) else "—"
+mercado_laboral_fmt = f"{fila_geih.iloc[0]['td']:.1f}%" if not fila_geih.empty and pd.notna(fila_geih.iloc[0]["td"]) else "—"
 
 # Si hay un municipio seleccionado, PIB y Competitividad se sobreescriben con
 # el dato municipal (igual que en el notebook); Población se queda a nivel
