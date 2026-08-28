@@ -4,6 +4,9 @@ FigureWidgets en el lugar), en Streamlit el script se re-ejecuta completo en
 cada interacción, así que no hace falta (ni sirve) mantener estado dentro de
 las figuras.
 """
+import colorsys
+import re
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -42,9 +45,21 @@ COLOR_LINEA_DEFECTO = "#262c60"
 COLOR_PUNTO_ANIO = "#F59E0B"
 
 
+def _a_rgb(color):
+    """Acepta "#rrggbb" o "rgb(r, g, b)" (así vienen las paletas
+    qualitative de Plotly, ej. Set3) y devuelve una tupla (r, g, b)."""
+    color = color.strip()
+    if color.startswith("#"):
+        color = color.lstrip("#")
+        return tuple(int(color[i:i + 2], 16) for i in (0, 2, 4))
+    m = re.match(r"rgba?\(([^)]+)\)", color)
+    if m:
+        return tuple(round(float(x)) for x in m.group(1).split(",")[:3])
+    raise ValueError(f"Formato de color no soportado: {color!r}")
+
+
 def _mezclar_con_blanco(color_hex, t):
-    color_hex = color_hex.lstrip("#")
-    r, g, b = (int(color_hex[i:i + 2], 16) for i in (0, 2, 4))
+    r, g, b = _a_rgb(color_hex)
     r = round(255 + (r - 255) * t)
     g = round(255 + (g - 255) * t)
     b = round(255 + (b - 255) * t)
@@ -54,31 +69,55 @@ def _mezclar_con_blanco(color_hex, t):
 # ------------------------------------------------------------------
 # Mapa departamental
 # ------------------------------------------------------------------
-def build_department_map(mapa_caribe_geo, caribe, departamento_actual, comparar_con=None):
+def build_department_map(mapa_caribe_geo, caribe, departamento_actual, comparar_con=None, colores_pib=None):
     nombres = [f["properties"]["nombre_entidad"] for f in mapa_caribe_geo["features"]]
-    colores_z = []
-    for nombre in nombres:
-        if nombre == departamento_actual:
-            colores_z.append(1)
-        elif comparar_con and nombre == comparar_con:
-            colores_z.append(2)
-        else:
-            colores_z.append(0)
 
-    fig = go.Figure(
-        go.Choropleth(
-            geojson=mapa_caribe_geo,
-            locations=nombres,
-            z=colores_z,
-            featureidkey="properties.nombre_entidad",
-            colorscale=[[0, "#E5E7EB"], [0.5, "#2563EB"], [1, "#F59E0B"]],
-            zmin=0, zmax=2,
-            showscale=False,
-            marker_line_color="white",
-            marker_line_width=1.5,
-            hovertemplate="<b>%{location}</b><extra></extra>",
+    if colores_pib is not None:
+        # Vista PIB: cada departamento con su propio color exacto (la mezcla
+        # ponderada de sus sectores), no el esquema fijo de 3 colores. La
+        # selección se marca con el borde, no con el relleno.
+        colores_lista = [colores_pib.get(n, COLOR_SIN_DATO) for n in nombres]
+        colorscale, z = _construir_colorscale_categorico(colores_lista)
+        anchos = [3.5 if n == departamento_actual else 1.2 for n in nombres]
+        lineas = ["#111827" if n == departamento_actual else "white" for n in nombres]
+        fig = go.Figure(
+            go.Choropleth(
+                geojson=mapa_caribe_geo,
+                locations=nombres,
+                z=z,
+                zmin=0, zmax=max(len(colores_lista), 1),
+                featureidkey="properties.nombre_entidad",
+                colorscale=colorscale,
+                showscale=False,
+                marker_line_color=lineas,
+                marker_line_width=anchos,
+                hovertemplate="<b>%{location}</b><extra></extra>",
+            )
         )
-    )
+    else:
+        colores_z = []
+        for nombre in nombres:
+            if nombre == departamento_actual:
+                colores_z.append(1)
+            elif comparar_con and nombre == comparar_con:
+                colores_z.append(2)
+            else:
+                colores_z.append(0)
+
+        fig = go.Figure(
+            go.Choropleth(
+                geojson=mapa_caribe_geo,
+                locations=nombres,
+                z=colores_z,
+                featureidkey="properties.nombre_entidad",
+                colorscale=[[0, "#E5E7EB"], [0.5, "#2563EB"], [1, "#F59E0B"]],
+                zmin=0, zmax=2,
+                showscale=False,
+                marker_line_color="white",
+                marker_line_width=1.5,
+                hovertemplate="<b>%{location}</b><extra></extra>",
+            )
+        )
     fig.update_geos(fitbounds="locations", visible=False)
     fig.update_layout(
         title="Caribe Colombiano",
@@ -86,6 +125,60 @@ def build_department_map(mapa_caribe_geo, caribe, departamento_actual, comparar_
         margin=dict(l=0, r=0, t=50, b=0),
     )
     return fig
+
+
+def _mezclar_colores_ponderados(pares, boost_saturacion=2.2):
+    """pares: lista de (color_hex, peso). Promedio ponderado por canal RGB
+    -- no es "el color del sector dominante aclarado", es una mezcla real de
+    todos los sectores según cuánto pesa cada uno.
+
+    Set3 (la paleta de los sectores) es pastel: satura poco (~0.15-0.45),
+    así que mezclar 13 de sus colores por promedio simple converge a tonos
+    muy parecidos entre sí -- el matiz (hue) sí varía según la composición
+    real de cada departamento, pero queda casi invisible bajo tan poca
+    saturación. Se reescala la saturación hacia arriba después de mezclar
+    (mismo matiz, mismo peso relativo, más contraste) para que la huella
+    de cada departamento se distinga a simple vista."""
+    total = sum(peso for _, peso in pares if peso and peso > 0)
+    if not total:
+        return COLOR_SIN_DATO
+    r = g = b = 0.0
+    for color_hex, peso in pares:
+        if not peso or peso <= 0:
+            continue
+        rr, gg, bb = _a_rgb(color_hex)
+        w = peso / total
+        r += rr * w
+        g += gg * w
+        b += bb * w
+    h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+    s = min(1.0, s * boost_saturacion)
+    r, g, b = colorsys.hls_to_rgb(h, l, s)
+    return f"#{round(r * 255):02x}{round(g * 255):02x}{round(b * 255):02x}"
+
+
+def calcular_colores_departamentos_pib(pib_sector_caribe, caribe, anio_sel):
+    """Un color por departamento: mezcla ponderada de los colores fijos de
+    cada sector (COLOR_SECTORES_PIB) según su participación real en el PIB
+    de ese departamento y año -- la huella de su estructura económica.
+    Departamentos con composición sectorial parecida terminan con colores
+    parecidos; uno muy diversificado tiende a un color más "promedio/gris".
+    """
+    colores = {}
+    for nombre_dep in caribe:
+        datos = pib_sector_caribe[
+            (pib_sector_caribe["Departamento"] == nombre_dep) & (pib_sector_caribe["Año"] == anio_sel)
+        ]
+        sectores = datos[~datos["Sector"].isin(["Valor agregado total", "Producto Interno Bruto"])]
+        pares = []
+        for _, fila in sectores.iterrows():
+            nombre_corto = NOMBRES_CORTOS_SECTOR.get(fila["Sector"], fila["Sector"])
+            color = COLOR_SECTORES_PIB.get(nombre_corto)
+            valor = fila["Valor_miles_millones_COP"]
+            if color and pd.notna(valor) and valor > 0:
+                pares.append((color, valor))
+        colores[nombre_dep] = _mezclar_colores_ponderados(pares) if pares else COLOR_SIN_DATO
+    return colores
 
 
 # ------------------------------------------------------------------
