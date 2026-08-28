@@ -9,7 +9,23 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 
-from data import ORDEN_GRUPOS_EDAD
+from data import NOMBRES_CORTOS_SECTOR, NOMBRES_RAMA_CORTOS, ORDEN_GRUPOS_EDAD
+
+# Color fijo por sector/rama -- no por posición. Si el color saliera de
+# "px.colors.qualitative.Set3" indexado por la posición de cada uno en la
+# dona, un mismo sector cambiaría de color entre departamentos (u ordenado
+# por valor) según dónde caiga ese día. Se arma una sola vez, en el orden
+# natural de cada diccionario, y de ahí en adelante todos los que dibujen
+# esa dona -- sin importar cómo estén ordenados los datos -- usan el mismo
+# color para el mismo sector/rama.
+def _mapa_color_fijo(nombres_cortos):
+    paleta = px.colors.qualitative.Set3
+    unicos = list(dict.fromkeys(nombres_cortos))
+    return {nombre: paleta[i % len(paleta)] for i, nombre in enumerate(unicos)}
+
+
+COLOR_SECTORES_PIB = _mapa_color_fijo(NOMBRES_CORTOS_SECTOR.values())
+COLOR_RAMA_GEIH = _mapa_color_fijo(NOMBRES_RAMA_CORTOS.values())
 
 COLOR_ACTIVO = "#2563EB"
 COLOR_COMPARAR = "#F59E0B"
@@ -225,7 +241,7 @@ def build_evolution_line(x, y, anio_actual, titulo, y_titulo, color_linea=COLOR_
 # ------------------------------------------------------------------
 # Dona de PIB por sector
 # ------------------------------------------------------------------
-def build_pastel(labels, values, titulo, unidad="miles de millones COP"):
+def build_pastel(labels, values, titulo, unidad="miles de millones COP", colores=None):
     # Listas planas de Python, no Series/arrays de pandas o numpy: cuando
     # "values" trae un dtype numérico, Plotly serializa el trace como un
     # array binario (base64 + dtype) en vez de JSON plano -- el componente
@@ -241,10 +257,13 @@ def build_pastel(labels, values, titulo, unidad="miles de millones COP"):
         f"<b>{etiqueta}</b><br>{valor:,.0f} {unidad}<br>{valor / total * 100:.1f}%<extra></extra>"
         for etiqueta, valor in zip(labels, values)
     ]
+    if colores is None:
+        paleta = px.colors.qualitative.Set3
+        colores = [paleta[i % len(paleta)] for i in range(len(labels))]
     fig = go.Figure(
         go.Pie(
             labels=labels, values=values, hole=0.35, sort=False,
-            marker=dict(colors=px.colors.qualitative.Set3),
+            marker=dict(colors=colores),
             textinfo="none",
             hovertemplate=hovertext,
         )
