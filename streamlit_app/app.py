@@ -674,33 +674,72 @@ elif variable_activa == "Mercado laboral":
                 "Vista de la línea", ["Tasa de desocupación", "PIB por trabajador"], default="Tasa de desocupación",
                 key="modo_linea_ml", label_visibility="collapsed", persist_state="session",
             )
-            if not modo_total and st.session_state.get("sector_actual_ml"):
+            if st.session_state.get("sector_actual_ml"):
                 if st.button(f"✕ Quitar {st.session_state['sector_actual_ml']['nombre']}", key="quitar_sector_ml"):
                     st.session_state["sector_actual_ml"] = None
                     st.rerun()
 
     if modo_total:
         # Vista Total: se agregan las 7 ciudades capitales (la GEIH no cubre
-        # nada más) -- sin desglose por sector, eso queda solo en la vista
-        # de un departamento a la vez.
+        # nada más). El click por sector sí está disponible -- se suma el
+        # PIB de ese sector en los 7 departamentos y los ocupados de esa
+        # rama en las 7 capitales.
         capitales_caribe = list(capitales.values())
+        sector_actual_ml = st.session_state.get("sector_actual_ml") if modo_linea_ml == "PIB por trabajador" else None
         with slot_izq_ml.container():
             if modo_linea_ml == "PIB por trabajador":
-                base = mun[mun["nombre_entidad"].isin(capitales_caribe)][["anio", "nombre_entidad", "valor_agregado"]].dropna()
-                ocup = geih_tasas[geih_tasas["nombre_entidad"].isin(capitales_caribe)][["anio", "nombre_entidad", "ocupados"]].dropna()
-                merge = base.merge(ocup, on=["anio", "nombre_entidad"])
-                serie = merge.groupby("anio", as_index=False).agg(valor_agregado=("valor_agregado", "sum"), ocupados=("ocupados", "sum"))
-                serie = serie[serie["ocupados"] > 0].sort_values("anio")
-                y = serie["valor_agregado"] / (serie["ocupados"] * 1000)
-                fig_linea = build_evolution_line(
-                    serie["anio"], y, anio_sel,
-                    "Evolución del PIB por trabajador — Región Caribe (7 capitales)", "PIB por trabajador (COP)",
-                )
-                st.plotly_chart(fig_linea, width="stretch")
-                st.caption(
-                    "Suma del PIB municipal (valor agregado) de las 7 capitales ÷ suma de sus ocupados (GEIH) "
-                    "-- productividad laboral agregada; el desglose por sector no está disponible en esta vista."
-                )
+                if sector_actual_ml:
+                    nombre_original_rama = next(
+                        (o for o, c in NOMBRES_RAMA_CORTOS.items() if c == sector_actual_ml["nombre"]),
+                        sector_actual_ml["nombre"],
+                    )
+                    sector_pib_original = RAMA_A_SECTOR_PIB.get(nombre_original_rama)
+                    serie_pib_sector = (
+                        pib_sector_caribe[pib_sector_caribe["Sector"] == sector_pib_original]
+                        .groupby("Año", as_index=False)["Valor_miles_millones_COP"].sum()
+                        .rename(columns={"Año": "anio"})
+                    )
+                    serie_ocup = (
+                        geih_ocupados_rama[geih_ocupados_rama["nombre_entidad"].isin(capitales_caribe)]
+                        [["anio", nombre_original_rama]]
+                        .groupby("anio", as_index=False)[nombre_original_rama].sum()
+                        .rename(columns={nombre_original_rama: "ocupados"})
+                    )
+                    serie = serie_pib_sector.merge(serie_ocup, on="anio", how="inner")
+                    serie = serie[serie["ocupados"] > 0].sort_values("anio")
+                    y = serie["Valor_miles_millones_COP"] * 1e9 / (serie["ocupados"] * 1000)
+                    fig_linea = build_evolution_line(
+                        serie["anio"], y, anio_sel,
+                        f"Evolución de PIB por trabajador — {sector_actual_ml['nombre']} (Región Caribe)",
+                        "PIB por trabajador (COP)", color_linea=sector_actual_ml["color"],
+                    )
+                    st.plotly_chart(fig_linea, width="stretch")
+                    aviso_combinado = (
+                        " El PIB de este sector incluye además otras ramas de la GEIH que no están contadas "
+                        "en estos ocupados (comercio, alojamiento y transporte van juntos en un solo sector "
+                        "de PIB) -- el número sale inflado."
+                        if nombre_original_rama in RAMAS_SECTOR_COMBINADO else ""
+                    )
+                    st.caption(
+                        "PIB del sector en los 7 departamentos ÷ ocupados en esa rama en las 7 capitales "
+                        "-- mezcla dos niveles geográficos distintos, es una aproximación." + aviso_combinado
+                    )
+                else:
+                    base = mun[mun["nombre_entidad"].isin(capitales_caribe)][["anio", "nombre_entidad", "valor_agregado"]].dropna()
+                    ocup = geih_tasas[geih_tasas["nombre_entidad"].isin(capitales_caribe)][["anio", "nombre_entidad", "ocupados"]].dropna()
+                    merge = base.merge(ocup, on=["anio", "nombre_entidad"])
+                    serie = merge.groupby("anio", as_index=False).agg(valor_agregado=("valor_agregado", "sum"), ocupados=("ocupados", "sum"))
+                    serie = serie[serie["ocupados"] > 0].sort_values("anio")
+                    y = serie["valor_agregado"] / (serie["ocupados"] * 1000)
+                    fig_linea = build_evolution_line(
+                        serie["anio"], y, anio_sel,
+                        "Evolución del PIB por trabajador — Región Caribe (7 capitales)", "PIB por trabajador (COP)",
+                    )
+                    st.plotly_chart(fig_linea, width="stretch")
+                    st.caption(
+                        "Suma del PIB municipal (valor agregado) de las 7 capitales ÷ suma de sus ocupados (GEIH) "
+                        "-- productividad laboral agregada."
+                    )
             else:
                 serie = geih_tasas[geih_tasas["nombre_entidad"].isin(capitales_caribe)].groupby(
                     "anio", as_index=False
@@ -729,7 +768,27 @@ elif variable_activa == "Mercado laboral":
                     unidad="miles de personas",
                     colores=[COLOR_RAMA_GEIH.get(e, "#cccccc") for e in etiquetas],
                 )
-                st.plotly_chart(fig_pastel_ml, width="stretch")
+                if modo_linea_ml == "PIB por trabajador":
+                    puntos_ml = plotly_events(
+                        fig_pastel_ml, click_event=True, override_height=420, override_width="100%",
+                        key="click_pastel_ml",
+                    )
+                    colores_rama = list(fig_pastel_ml.data[0].marker.colors)
+                    if puntos_ml:
+                        idx = puntos_ml[0].get("pointNumber")
+                        if idx is not None and idx < len(etiquetas):
+                            rama_click = etiquetas[idx]
+                            color_click = colores_rama[idx % len(colores_rama)]
+                            if st.session_state.get("_ultimo_click_pastel_ml") != ("TOTAL", anio_sel, rama_click):
+                                st.session_state["_ultimo_click_pastel_ml"] = ("TOTAL", anio_sel, rama_click)
+                                actual = st.session_state.get("sector_actual_ml")
+                                if actual and actual["nombre"] == rama_click:
+                                    st.session_state["sector_actual_ml"] = None
+                                else:
+                                    st.session_state["sector_actual_ml"] = {"nombre": rama_click, "color": color_click}
+                                st.rerun()
+                else:
+                    st.plotly_chart(fig_pastel_ml, width="stretch")
                 st.caption("Miles de personas, suma de las 7 capitales, trimestre móvil Oct-Dic (GEIH, DANE).")
     elif not ciudad_ml:
         st.info(
