@@ -23,6 +23,7 @@ from charts import (
     build_pastel,
     build_pastel_municipal,
     build_pastel_participacion,
+    build_pastel_participacion_total,
     build_pyramid,
     build_radar,
     calcular_colores_departamentos_pib,
@@ -66,6 +67,7 @@ def _init_estado():
         "comparar_con": "Ninguno",
         "sector_actual": None,
         "sector_actual_ml": None,
+        "modo_total": False,
         "interactuado": False,
     }
     for k, v in defaults.items():
@@ -123,7 +125,8 @@ with col_mapa:
                 if st.session_state["variable_activa"] == "PIB" else None
             )
             fig_mapa = build_department_map(
-                mapa_caribe_geo, caribe, st.session_state["departamento_actual"], comparar_dep, colores_pib_dep
+                mapa_caribe_geo, caribe, st.session_state["departamento_actual"], comparar_dep, colores_pib_dep,
+                todos_activos=st.session_state["modo_total"],
             )
             if colores_pib_dep is not None:
                 st.caption("Color = mezcla ponderada de los sectores del PIB (huella económica) · borde oscuro = seleccionado")
@@ -135,6 +138,7 @@ with col_mapa:
                 st.session_state["municipio_actual"] = None
                 st.session_state["sector_actual"] = None
                 st.session_state["sector_actual_ml"] = None
+                st.session_state["modo_total"] = False
                 st.rerun()
         else:
             mapa_mun_geo = geojson_municipios_de(data["mapa_mun_geo"], mun, st.session_state["departamento_actual"])
@@ -174,6 +178,7 @@ with col_mapa:
             st.session_state["sector_actual"] = None
             st.session_state["sector_actual_ml"] = None
             st.session_state["comparar_con"] = "Ninguno"
+            st.session_state["modo_total"] = False
             st.rerun()
 
     # Lista clickeable -- la misma selección que se hace tocando el mapa,
@@ -182,8 +187,20 @@ with col_mapa:
     with col_mapa_lista:
         if not st.session_state["vista_municipios"]:
             st.caption("Departamentos")
+            activo_total = st.session_state["modo_total"]
+            if st.button(
+                "🌎 Total — Región Caribe", key="btn_total_caribe",
+                type="primary" if activo_total else "secondary", width="stretch",
+            ):
+                if not activo_total:
+                    st.session_state["interactuado"] = True
+                    st.session_state["modo_total"] = True
+                    st.session_state["municipio_actual"] = None
+                    st.session_state["sector_actual"] = None
+                    st.session_state["sector_actual_ml"] = None
+                    st.rerun()
             for nombre in sorted(caribe):
-                activo = nombre == st.session_state["departamento_actual"]
+                activo = nombre == st.session_state["departamento_actual"] and not activo_total
                 if st.button(nombre, key=f"btn_dep_{nombre}", type="primary" if activo else "secondary", width="stretch"):
                     if not activo:
                         st.session_state["interactuado"] = True
@@ -191,6 +208,7 @@ with col_mapa:
                         st.session_state["municipio_actual"] = None
                         st.session_state["sector_actual"] = None
                         st.session_state["sector_actual_ml"] = None
+                        st.session_state["modo_total"] = False
                         st.rerun()
         else:
             dep_lista = st.session_state["departamento_actual"]
@@ -210,17 +228,28 @@ with col_mapa:
 # TARJETAS (Población / PIB / Competitividad / Municipios)
 # ------------------------------------------------------------------
 nombre_dep = st.session_state["departamento_actual"]
-fila_dep = dep[(dep["nombre_entidad"] == nombre_dep) & (dep["anio"] == anio_sel)]
+modo_total = st.session_state["modo_total"]
 
-if fila_dep.empty:
-    poblacion_fmt, pib_fmt, competitividad_fmt = "—", "—", "—"
+if modo_total:
+    # Vista Total: los 7 departamentos del Caribe combinados en una sola
+    # "hoja" -- población y PIB se suman, competitividad se promedia (es un
+    # índice, no algo que tenga sentido sumar).
+    dep_anio_total = dep[dep["anio"] == anio_sel]
+    poblacion_fmt = f"{dep_anio_total['poblacion_total'].sum():,.0f}"
+    pib_fmt = f"${dep_anio_total['pib'].sum() / 1e12:,.1f} billones"
+    comp_serie_total = dep_anio_total["indice_competitividad"].dropna()
+    competitividad_fmt = f"{comp_serie_total.mean():.2f} / 10" if not comp_serie_total.empty else "—"
 else:
-    f = fila_dep.iloc[0]
-    poblacion_fmt = f"{f['poblacion_total']:,.0f}"
-    pib_fmt = f"${f['pib'] / 1e12:,.1f} billones"
-    competitividad_fmt = f"{f['indice_competitividad']:.2f} / 10" if pd.notna(f.get("indice_competitividad")) else "—"
+    fila_dep = dep[(dep["nombre_entidad"] == nombre_dep) & (dep["anio"] == anio_sel)]
+    if fila_dep.empty:
+        poblacion_fmt, pib_fmt, competitividad_fmt = "—", "—", "—"
+    else:
+        f = fila_dep.iloc[0]
+        poblacion_fmt = f"{f['poblacion_total']:,.0f}"
+        pib_fmt = f"${f['pib'] / 1e12:,.1f} billones"
+        competitividad_fmt = f"{f['indice_competitividad']:.2f} / 10" if pd.notna(f.get("indice_competitividad")) else "—"
 
-if not st.session_state["interactuado"]:
+if modo_total or not st.session_state["interactuado"]:
     municipios_fmt = mun["nombre_entidad"].nunique()
 else:
     municipios_fmt = mun[mun["nombre_departamento"] == nombre_dep]["nombre_entidad"].nunique()
@@ -236,7 +265,19 @@ if ciudad_ml and ciudad_ml != capital_dep:
 elif not ciudad_ml:
     ciudad_ml = capital_dep
 
-if ciudad_ml:
+if modo_total:
+    # Tasa de desocupación regional = desocupados ÷ fuerza de trabajo,
+    # sumados entre las 7 capitales -- no el promedio simple de las 7 tasas
+    # (eso pesaría igual a Riohacha que a Barranquilla).
+    capitales_caribe = list(capitales.values())
+    fila_ml_total = geih_tasas[
+        geih_tasas["nombre_entidad"].isin(capitales_caribe) & (geih_tasas["anio"] == anio_sel)
+    ]
+    fuerza_total = fila_ml_total["fuerza_trabajo"].sum()
+    mercado_laboral_fmt = (
+        f"{fila_ml_total['desocupados'].sum() / fuerza_total * 100:.1f}%" if fuerza_total else "—"
+    )
+elif ciudad_ml:
     fila_ml = geih_tasas[(geih_tasas["nombre_entidad"] == ciudad_ml) & (geih_tasas["anio"] == anio_sel)]
     mercado_laboral_fmt = f"{fila_ml.iloc[0]['td']:.1f}%" if not fila_ml.empty and pd.notna(fila_ml.iloc[0].get("td")) else "—"
 else:
@@ -263,8 +304,12 @@ if municipio_actual:
     else:
         pib_fmt, competitividad_fmt = "—", "—"
 
-st.subheader(nombre_dep if not municipio_actual else f"{municipio_actual} — {nombre_dep}")
-st.caption(f"Perfil {'municipal' if municipio_actual else 'departamental'} — {anio_sel}")
+if modo_total:
+    st.subheader("Región Caribe — Total")
+    st.caption(f"Perfil regional (7 departamentos) — {anio_sel}")
+else:
+    st.subheader(nombre_dep if not municipio_actual else f"{municipio_actual} — {nombre_dep}")
+    st.caption(f"Perfil {'municipal' if municipio_actual else 'departamental'} — {anio_sel}")
 
 c1, c2, c3, c4, c5 = st.columns(5)
 
@@ -303,29 +348,36 @@ if variable_activa == "Competitividad":
     if not municipio_actual:
         st.subheader("La competitividad como medida de desarrollo", divider="gray")
 
-    comparar_con = st.selectbox("Comparar con:", opciones_comparar, key="comparar_con")
-
-    if municipio_actual:
-        fila_pil = icc_pilares[(icc_pilares["nombre_entidad"] == municipio_actual) & (icc_pilares["anio"] == anio_sel)]
-        titulo_radar = municipio_actual
+    if modo_total:
+        fila_pil_total = idc_pilares[idc_pilares["nombre_entidad"].isin(caribe) & (idc_pilares["anio"] == anio_sel)]
+        valores = [0] * len(pilares_disponibles) if fila_pil_total.empty else fila_pil_total[pilares_disponibles].mean().tolist()
+        fig_radar = build_radar(pilares_disponibles, valores, "Región Caribe (promedio)")
+        st.plotly_chart(fig_radar, width="stretch")
+        st.caption("Promedio simple de los 7 departamentos del Caribe en cada pilar del ICC.")
     else:
-        fila_pil = idc_pilares[(idc_pilares["nombre_entidad"] == nombre_dep) & (idc_pilares["anio"] == anio_sel)]
-        titulo_radar = nombre_dep
+        comparar_con = st.selectbox("Comparar con:", opciones_comparar, key="comparar_con")
 
-    if fila_pil.empty:
-        valores = [0] * len(pilares_disponibles)
-    else:
-        valores = fila_pil.iloc[0][pilares_disponibles].tolist()
+        if municipio_actual:
+            fila_pil = icc_pilares[(icc_pilares["nombre_entidad"] == municipio_actual) & (icc_pilares["anio"] == anio_sel)]
+            titulo_radar = municipio_actual
+        else:
+            fila_pil = idc_pilares[(idc_pilares["nombre_entidad"] == nombre_dep) & (idc_pilares["anio"] == anio_sel)]
+            titulo_radar = nombre_dep
 
-    valores_comp = None
-    if comparar_con != "Ninguno":
-        tabla_comp = icc_pilares if municipio_actual else idc_pilares
-        fila_comp = tabla_comp[(tabla_comp["nombre_entidad"] == comparar_con) & (tabla_comp["anio"] == anio_sel)]
-        if not fila_comp.empty:
-            valores_comp = fila_comp.iloc[0][pilares_disponibles].tolist()
+        if fila_pil.empty:
+            valores = [0] * len(pilares_disponibles)
+        else:
+            valores = fila_pil.iloc[0][pilares_disponibles].tolist()
 
-    fig_radar = build_radar(pilares_disponibles, valores, titulo_radar, comparar_con if valores_comp else None, valores_comp)
-    st.plotly_chart(fig_radar, width="stretch")
+        valores_comp = None
+        if comparar_con != "Ninguno":
+            tabla_comp = icc_pilares if municipio_actual else idc_pilares
+            fila_comp = tabla_comp[(tabla_comp["nombre_entidad"] == comparar_con) & (tabla_comp["anio"] == anio_sel)]
+            if not fila_comp.empty:
+                valores_comp = fila_comp.iloc[0][pilares_disponibles].tolist()
+
+        fig_radar = build_radar(pilares_disponibles, valores, titulo_radar, comparar_con if valores_comp else None, valores_comp)
+        st.plotly_chart(fig_radar, width="stretch")
 
 elif variable_activa == "PIB":
     # Los toggles se leen de session_state ANTES de instanciar el widget (que
@@ -334,9 +386,43 @@ elif variable_activa == "PIB":
     # session_state al inicio del rerun, así que esto es seguro.
     modo_linea = st.session_state.get("modo_linea_pib", "Absoluto")
     modo_part = st.session_state.get("modo_participacion_pib", "Sectorial")
+    ambito_pib = "Región Caribe" if modo_total else nombre_dep
 
     with col_izq:
-        if municipio_actual:
+        if modo_total:
+            sector_actual = st.session_state["sector_actual"] if modo_part == "Sectorial" else None
+            if sector_actual:
+                nombre_original = next(
+                    (o for o, c in NOMBRES_CORTOS_SECTOR.items() if c == sector_actual["nombre"]), sector_actual["nombre"]
+                )
+                serie = (
+                    pib_sector_caribe[pib_sector_caribe["Sector"] == nombre_original]
+                    .groupby("Año", as_index=False)["Valor_miles_millones_COP"].sum()
+                    .dropna(subset=["Valor_miles_millones_COP"])
+                    .sort_values("Año")
+                )
+                if modo_linea == "Per cápita":
+                    poblacion_por_anio = dep.groupby("anio")["poblacion_total"].sum()
+                    y = serie["Valor_miles_millones_COP"] * 1e9 / serie["Año"].map(poblacion_por_anio)
+                    y_titulo = f"{sector_actual['nombre']} per cápita"
+                else:
+                    y = serie["Valor_miles_millones_COP"]
+                    y_titulo = f"{sector_actual['nombre']} (miles de millones COP)"
+                fig_linea = build_evolution_line(
+                    serie["Año"], y, anio_sel, f"Evolución de {y_titulo} — {ambito_pib}", y_titulo,
+                    color_linea=sector_actual["color"],
+                )
+            else:
+                serie = dep.groupby("anio", as_index=False).agg(pib=("pib", "sum"), poblacion_total=("poblacion_total", "sum"))
+                serie = serie.dropna(subset=["pib"]).sort_values("anio")
+                if modo_linea == "Per cápita":
+                    y, y_titulo = serie["pib"] / serie["poblacion_total"], "PIB per cápita"
+                else:
+                    y, y_titulo = serie["pib"], "PIB"
+                fig_linea = build_evolution_line(
+                    serie["anio"], y, anio_sel, f"Evolución de {y_titulo} — {ambito_pib}", y_titulo,
+                )
+        elif municipio_actual:
             serie = (
                 mun[(mun["nombre_entidad"] == municipio_actual) & (mun["nombre_departamento"] == nombre_dep)]
                 .dropna(subset=["valor_agregado"])
@@ -399,7 +485,39 @@ elif variable_activa == "PIB":
 
     with col_der:
         if modo_part == "Sectorial":
-            if municipio_actual:
+            if modo_total:
+                datos = pib_sector_caribe[pib_sector_caribe["Año"] == anio_sel]
+                sectores = (
+                    datos[~datos["Sector"].isin(["Valor agregado total", "Producto Interno Bruto"])]
+                    .groupby("Sector", as_index=False)["Valor_miles_millones_COP"].sum()
+                )
+                sectores["Sector_corto"] = sectores["Sector"].map(NOMBRES_CORTOS_SECTOR).fillna(sectores["Sector"])
+                sectores = sectores.sort_values("Valor_miles_millones_COP", ascending=False)
+                fig_pastel = build_pastel(
+                    sectores["Sector_corto"], sectores["Valor_miles_millones_COP"],
+                    f"Composición del PIB por sector — {ambito_pib} ({anio_sel})",
+                    colores=[COLOR_SECTORES_PIB.get(s, "#cccccc") for s in sectores["Sector_corto"]],
+                )
+                puntos = plotly_events(
+                    fig_pastel, click_event=True, override_height=420, override_width="100%",
+                    key="click_pastel",
+                )
+                etiquetas_sector = list(sectores["Sector_corto"])
+                colores_sector = list(fig_pastel.data[0].marker.colors)
+                if puntos:
+                    idx = puntos[0].get("pointNumber")
+                    if idx is not None and idx < len(etiquetas_sector):
+                        sector_click = etiquetas_sector[idx]
+                        color_click = colores_sector[idx % len(colores_sector)]
+                        if st.session_state.get("_ultimo_click_pastel") != ("TOTAL", anio_sel, sector_click):
+                            st.session_state["_ultimo_click_pastel"] = ("TOTAL", anio_sel, sector_click)
+                            actual = st.session_state["sector_actual"]
+                            if actual and actual["nombre"] == sector_click:
+                                st.session_state["sector_actual"] = None
+                            else:
+                                st.session_state["sector_actual"] = {"nombre": sector_click, "color": color_click}
+                            st.rerun()
+            elif municipio_actual:
                 fila_mun_anio = mun[
                     (mun["nombre_entidad"] == municipio_actual)
                     & (mun["nombre_departamento"] == nombre_dep)
@@ -457,11 +575,23 @@ elif variable_activa == "PIB":
                             st.rerun()
 
         else:  # Regional / Nacional -- participación dentro de un universo mayor
-            fila_dep_anio = dep[(dep["nombre_entidad"] == nombre_dep) & (dep["anio"] == anio_sel)]
-            valor_dep = fila_dep_anio["pib"].iloc[0] if not fila_dep_anio.empty else 0
             valor_caribe = dep[dep["anio"] == anio_sel]["pib"].sum()
 
-            if municipio_actual:
+            if modo_total:
+                # Ya no hay un departamento en el medio -- el equivalente
+                # "de zoom" del pastel de 3 porciones es Caribe vs. resto de
+                # Colombia, sin más.
+                valor_nacional = dep_nacional[dep_nacional["anio"] == anio_sel]["pib"].sum()
+                resto_nacional = max(valor_nacional - valor_caribe, 0)
+                pct_nacional = (valor_caribe / valor_nacional * 100) if valor_nacional else 0
+                hover = f"<b>Región Caribe</b><br>{pct_nacional:.1f}% de Colombia<extra></extra>"
+                fig_pastel = build_pastel_participacion_total(
+                    "Región Caribe", "Resto de Colombia", valor_caribe, resto_nacional,
+                    f"Participación de la Región Caribe en Colombia ({anio_sel})", hover,
+                )
+            elif municipio_actual:
+                fila_dep_anio = dep[(dep["nombre_entidad"] == nombre_dep) & (dep["anio"] == anio_sel)]
+                valor_dep = fila_dep_anio["pib"].iloc[0] if not fila_dep_anio.empty else 0
                 fila_mun_anio = mun[
                     (mun["nombre_entidad"] == municipio_actual)
                     & (mun["nombre_departamento"] == nombre_dep)
@@ -490,6 +620,8 @@ elif variable_activa == "PIB":
                         hover,
                     )
             else:
+                fila_dep_anio = dep[(dep["nombre_entidad"] == nombre_dep) & (dep["anio"] == anio_sel)]
+                valor_dep = fila_dep_anio["pib"].iloc[0] if not fila_dep_anio.empty else 0
                 valor_nacional = dep_nacional[dep_nacional["anio"] == anio_sel]["pib"].sum()
                 resto_caribe = max(valor_caribe - valor_dep, 0)
                 resto_nacional = max(valor_nacional - valor_caribe, 0)
@@ -519,7 +651,64 @@ elif variable_activa == "PIB":
         )
 
 elif variable_activa == "Mercado laboral":
-    if not ciudad_ml:
+    if modo_total:
+        # Vista Total: se agregan las 7 ciudades capitales (la GEIH no cubre
+        # nada más) -- sin desglose por sector, eso queda solo en la vista
+        # de un departamento a la vez.
+        capitales_caribe = list(capitales.values())
+        modo_linea_ml = st.session_state.get("modo_linea_ml", "Tasa de desocupación")
+        with col_izq:
+            if modo_linea_ml == "PIB por trabajador":
+                base = mun[mun["nombre_entidad"].isin(capitales_caribe)][["anio", "nombre_entidad", "valor_agregado"]].dropna()
+                ocup = geih_tasas[geih_tasas["nombre_entidad"].isin(capitales_caribe)][["anio", "nombre_entidad", "ocupados"]].dropna()
+                merge = base.merge(ocup, on=["anio", "nombre_entidad"])
+                serie = merge.groupby("anio", as_index=False).agg(valor_agregado=("valor_agregado", "sum"), ocupados=("ocupados", "sum"))
+                serie = serie[serie["ocupados"] > 0].sort_values("anio")
+                y = serie["valor_agregado"] / (serie["ocupados"] * 1000)
+                fig_linea = build_evolution_line(
+                    serie["anio"], y, anio_sel,
+                    "Evolución del PIB por trabajador — Región Caribe (7 capitales)", "PIB por trabajador (COP)",
+                )
+                st.plotly_chart(fig_linea, width="stretch")
+                st.caption(
+                    "Suma del PIB municipal (valor agregado) de las 7 capitales ÷ suma de sus ocupados (GEIH) "
+                    "-- productividad laboral agregada; el desglose por sector no está disponible en esta vista."
+                )
+            else:
+                serie = geih_tasas[geih_tasas["nombre_entidad"].isin(capitales_caribe)].groupby(
+                    "anio", as_index=False
+                ).agg(desocupados=("desocupados", "sum"), fuerza_trabajo=("fuerza_trabajo", "sum"))
+                serie = serie[serie["fuerza_trabajo"] > 0].sort_values("anio")
+                td = serie["desocupados"] / serie["fuerza_trabajo"] * 100
+                fig_linea = build_evolution_line(
+                    serie["anio"], td, anio_sel,
+                    "Evolución de la Tasa de Desocupación — Región Caribe (7 capitales)", "Tasa de desocupación (%)",
+                    unidad="%",
+                )
+                st.plotly_chart(fig_linea, width="stretch")
+                st.caption("Desocupados ÷ fuerza de trabajo, sumados entre las 7 ciudades capitales (GEIH, DANE).")
+            st.segmented_control(
+                "Vista de la línea", ["Tasa de desocupación", "PIB por trabajador"], default="Tasa de desocupación",
+                key="modo_linea_ml", label_visibility="collapsed",
+            )
+        with col_der:
+            fila_rama_total = geih_ocupados_rama[
+                geih_ocupados_rama["nombre_entidad"].isin(capitales_caribe) & (geih_ocupados_rama["anio"] == anio_sel)
+            ]
+            if fila_rama_total.empty:
+                st.info(f"Sin dato de ocupados por sector para la Región Caribe en {anio_sel}.")
+            else:
+                ramas = list(NOMBRES_RAMA_CORTOS.keys())
+                valores_rama = fila_rama_total[ramas].sum().sort_values(ascending=False)
+                etiquetas = [NOMBRES_RAMA_CORTOS[c] for c in valores_rama.index]
+                fig_pastel_ml = build_pastel(
+                    etiquetas, valores_rama.values, f"Ocupados por sector — Región Caribe ({anio_sel})",
+                    unidad="miles de personas",
+                    colores=[COLOR_RAMA_GEIH.get(e, "#cccccc") for e in etiquetas],
+                )
+                st.plotly_chart(fig_pastel_ml, width="stretch")
+                st.caption("Miles de personas, suma de las 7 capitales, trimestre móvil Oct-Dic (GEIH, DANE).")
+    elif not ciudad_ml:
         st.info(
             f"La GEIH no tiene dato para este municipio -- solo cubre la ciudad capital "
             f"({capital_dep or 'sin capital definida'})."
@@ -647,7 +836,12 @@ elif variable_activa == "Mercado laboral":
 
 else:  # Población
     with col_izq:
-        if municipio_actual:
+        if modo_total:
+            serie = dep.groupby("anio", as_index=False)["poblacion_total"].sum().dropna(subset=["poblacion_total"]).sort_values("anio")
+            fig_linea = build_evolution_line(
+                serie["anio"], serie["poblacion_total"], anio_sel, "Evolución de Población — Región Caribe", "Población",
+            )
+        elif municipio_actual:
             serie = (
                 mun[(mun["nombre_entidad"] == municipio_actual) & (mun["nombre_departamento"] == nombre_dep)]
                 .dropna(subset=["poblacion_total"])
@@ -665,23 +859,30 @@ else:  # Población
         st.plotly_chart(fig_linea, width="stretch")
 
     with col_der:
-        datos_dep_pir = piramide_dep[(piramide_dep["nombre_entidad"] == nombre_dep) & (piramide_dep["anio"] == anio_sel)]
-        datos_dep_pir = datos_dep_pir.set_index("grupo_edad").reindex(ORDEN_GRUPOS_EDAD).fillna(0)
-
-        if municipio_actual:
-            datos_mun_pir = piramide_mun[
-                (piramide_mun["nombre_entidad"] == municipio_actual)
-                & (piramide_mun["nombre_departamento"] == nombre_dep)
-                & (piramide_mun["anio"] == anio_sel)
-            ]
-            datos_mun_pir = datos_mun_pir.set_index("grupo_edad").reindex(ORDEN_GRUPOS_EDAD).fillna(0)
+        if modo_total:
+            datos_pir_total = piramide_dep[piramide_dep["nombre_entidad"].isin(caribe) & (piramide_dep["anio"] == anio_sel)]
+            datos_pir_total = datos_pir_total.groupby("grupo_edad")[["hombres", "mujeres"]].sum().reindex(ORDEN_GRUPOS_EDAD).fillna(0)
             fig_piramide = build_pyramid(
-                datos_mun_pir["hombres"], datos_mun_pir["mujeres"],
-                f"Pirámide poblacional — {municipio_actual} dentro de {nombre_dep} ({anio_sel})",
-                hombres_fondo=datos_dep_pir["hombres"], mujeres_fondo=datos_dep_pir["mujeres"],
+                datos_pir_total["hombres"], datos_pir_total["mujeres"], f"Pirámide poblacional — Región Caribe ({anio_sel})",
             )
         else:
-            fig_piramide = build_pyramid(
-                datos_dep_pir["hombres"], datos_dep_pir["mujeres"], f"Pirámide poblacional — {nombre_dep} ({anio_sel})",
-            )
+            datos_dep_pir = piramide_dep[(piramide_dep["nombre_entidad"] == nombre_dep) & (piramide_dep["anio"] == anio_sel)]
+            datos_dep_pir = datos_dep_pir.set_index("grupo_edad").reindex(ORDEN_GRUPOS_EDAD).fillna(0)
+
+            if municipio_actual:
+                datos_mun_pir = piramide_mun[
+                    (piramide_mun["nombre_entidad"] == municipio_actual)
+                    & (piramide_mun["nombre_departamento"] == nombre_dep)
+                    & (piramide_mun["anio"] == anio_sel)
+                ]
+                datos_mun_pir = datos_mun_pir.set_index("grupo_edad").reindex(ORDEN_GRUPOS_EDAD).fillna(0)
+                fig_piramide = build_pyramid(
+                    datos_mun_pir["hombres"], datos_mun_pir["mujeres"],
+                    f"Pirámide poblacional — {municipio_actual} dentro de {nombre_dep} ({anio_sel})",
+                    hombres_fondo=datos_dep_pir["hombres"], mujeres_fondo=datos_dep_pir["mujeres"],
+                )
+            else:
+                fig_piramide = build_pyramid(
+                    datos_dep_pir["hombres"], datos_dep_pir["mujeres"], f"Pirámide poblacional — {nombre_dep} ({anio_sel})",
+                )
         st.plotly_chart(fig_piramide, width="stretch")
