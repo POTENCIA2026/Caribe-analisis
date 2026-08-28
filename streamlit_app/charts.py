@@ -226,11 +226,16 @@ def build_evolution_line(x, y, anio_actual, titulo, y_titulo, color_linea=COLOR_
 # Dona de PIB por sector
 # ------------------------------------------------------------------
 def build_pastel(labels, values, titulo, unidad="miles de millones COP"):
-    # Hover pre-formateado en Python (no con el mini-lenguaje %{value:,.0f}
-    # de Plotly) -- el componente plotly_events usado para el click en la
-    # dona sectorial trae una versión de Plotly.js más vieja que no soporta
-    # bien ese formato numérico y mostraba valores rotos (ej. "1" en vez del
-    # valor real). Precalculando el texto evitamos depender de eso.
+    # Listas planas de Python, no Series/arrays de pandas o numpy: cuando
+    # "values" trae un dtype numérico, Plotly serializa el trace como un
+    # array binario (base64 + dtype) en vez de JSON plano -- el componente
+    # plotly_events (usado para el click en la dona sectorial) trae una
+    # versión de Plotly.js más vieja que no sabe decodificar ese formato, y
+    # sin values legibles Plotly.js dibuja las porciones todas del mismo
+    # tamaño en vez de proporcionales. Con listas planas siempre va como
+    # JSON normal, sin importar qué motor la renderice.
+    labels = list(labels)
+    values = [float(v) for v in values]
     total = sum(values) or 1
     hovertext = [
         f"<b>{etiqueta}</b><br>{valor:,.0f} {unidad}<br>{valor / total * 100:.1f}%<extra></extra>"
