@@ -24,6 +24,7 @@ from charts import (
     build_pastel_municipal,
     build_pastel_participacion,
     build_pastel_participacion_total,
+    build_ranking_barras,
     build_pyramid,
     build_radar,
     calcular_colores_departamentos_pib,
@@ -189,7 +190,7 @@ with col_mapa:
             st.caption("Departamentos")
             activo_total = st.session_state["modo_total"]
             if st.button(
-                "🌎 Total — Región Caribe", key="btn_total_caribe",
+                "REGIÓN CARIBE", key="btn_total_caribe",
                 type="primary" if activo_total else "secondary", width="stretch",
             ):
                 if not activo_total:
@@ -759,6 +760,50 @@ elif variable_activa == "Mercado laboral":
             ]
             if fila_rama_total.empty:
                 st.info(f"Sin dato de ocupados por sector para la Región Caribe en {anio_sel}.")
+            elif modo_linea_ml == "PIB por trabajador":
+                ocupados_por_rama = fila_rama_total[list(NOMBRES_RAMA_CORTOS.keys())].sum()
+                fila_pib_anio_total = pib_sector_caribe[pib_sector_caribe["Año"] == anio_sel].groupby("Sector")[
+                    "Valor_miles_millones_COP"
+                ].sum()
+                filas_ranking = []
+                for rama_original, rama_corto in NOMBRES_RAMA_CORTOS.items():
+                    ocupados = ocupados_por_rama.get(rama_original)
+                    pib = fila_pib_anio_total.get(RAMA_A_SECTOR_PIB.get(rama_original))
+                    if pd.notna(ocupados) and ocupados > 0 and pd.notna(pib):
+                        filas_ranking.append({"rama": rama_corto, "valor": pib * 1e9 / (ocupados * 1000)})
+                if not filas_ranking:
+                    st.info(f"Sin dato de PIB por trabajador por sector para la Región Caribe en {anio_sel}.")
+                else:
+                    ranking = pd.DataFrame(filas_ranking).sort_values("valor")
+                    fig_ranking = build_ranking_barras(
+                        list(ranking["rama"]), list(ranking["valor"]),
+                        f"PIB por trabajador por sector — Región Caribe ({anio_sel})",
+                        colores=[COLOR_RAMA_GEIH.get(r, "#cccccc") for r in ranking["rama"]],
+                        unidad="COP", seleccionado=sector_actual_ml["nombre"] if sector_actual_ml else None,
+                    )
+                    evento_ranking = st.plotly_chart(
+                        fig_ranking, on_select="rerun", key="click_ranking_ml", selection_mode="points", width="stretch",
+                    )
+                    puntos = evento_ranking["selection"]["points"] if evento_ranking and evento_ranking.get("selection") else []
+                    ramas_ranking = list(ranking["rama"])
+                    if puntos:
+                        idx = puntos[0].get("point_index")
+                        if idx is not None and idx < len(ramas_ranking):
+                            rama_click = ramas_ranking[idx]
+                            if st.session_state.get("_ultimo_click_ranking_ml") != ("TOTAL", anio_sel, rama_click):
+                                st.session_state["_ultimo_click_ranking_ml"] = ("TOTAL", anio_sel, rama_click)
+                                actual = st.session_state.get("sector_actual_ml")
+                                if actual and actual["nombre"] == rama_click:
+                                    st.session_state["sector_actual_ml"] = None
+                                else:
+                                    st.session_state["sector_actual_ml"] = {
+                                        "nombre": rama_click, "color": COLOR_RAMA_GEIH.get(rama_click, "#cccccc"),
+                                    }
+                                st.rerun()
+                    st.caption(
+                        f"PIB del sector en los 7 departamentos ÷ ocupados en esa rama en las 7 capitales, "
+                        f"para {anio_sel} -- mezcla dos niveles geográficos distintos, es una aproximación."
+                    )
             else:
                 ramas = list(NOMBRES_RAMA_CORTOS.keys())
                 valores_rama = fila_rama_total[ramas].sum().sort_values(ascending=False)
@@ -768,27 +813,7 @@ elif variable_activa == "Mercado laboral":
                     unidad="miles de personas",
                     colores=[COLOR_RAMA_GEIH.get(e, "#cccccc") for e in etiquetas],
                 )
-                if modo_linea_ml == "PIB por trabajador":
-                    puntos_ml = plotly_events(
-                        fig_pastel_ml, click_event=True, override_height=420, override_width="100%",
-                        key="click_pastel_ml",
-                    )
-                    colores_rama = list(fig_pastel_ml.data[0].marker.colors)
-                    if puntos_ml:
-                        idx = puntos_ml[0].get("pointNumber")
-                        if idx is not None and idx < len(etiquetas):
-                            rama_click = etiquetas[idx]
-                            color_click = colores_rama[idx % len(colores_rama)]
-                            if st.session_state.get("_ultimo_click_pastel_ml") != ("TOTAL", anio_sel, rama_click):
-                                st.session_state["_ultimo_click_pastel_ml"] = ("TOTAL", anio_sel, rama_click)
-                                actual = st.session_state.get("sector_actual_ml")
-                                if actual and actual["nombre"] == rama_click:
-                                    st.session_state["sector_actual_ml"] = None
-                                else:
-                                    st.session_state["sector_actual_ml"] = {"nombre": rama_click, "color": color_click}
-                                st.rerun()
-                else:
-                    st.plotly_chart(fig_pastel_ml, width="stretch")
+                st.plotly_chart(fig_pastel_ml, width="stretch")
                 st.caption("Miles de personas, suma de las 7 capitales, trimestre móvil Oct-Dic (GEIH, DANE).")
     elif not ciudad_ml:
         st.info(
@@ -877,6 +902,57 @@ elif variable_activa == "Mercado laboral":
             ]
             if fila_rama.empty:
                 st.info(f"Sin dato de ocupados por sector para {ciudad_ml} en {anio_sel}.")
+            elif modo_linea_ml == "PIB por trabajador":
+                # Ranking en vez de dona: PIB por trabajador no es "parte de
+                # un todo" (no tiene sentido que las ramas sumen 100%), y al
+                # usar el mismo st.plotly_chart nativo que la vista de Tasa
+                # de desocupación (en vez de plotly_events, que solo hace
+                # falta para el click en donas) el título no salta de
+                # posición al alternar entre las dos vistas.
+                fila = fila_rama.iloc[0]
+                fila_pib_anio = pib_sector_caribe[
+                    (pib_sector_caribe["Departamento"] == nombre_dep) & (pib_sector_caribe["Año"] == anio_sel)
+                ].set_index("Sector")["Valor_miles_millones_COP"]
+                filas_ranking = []
+                for rama_original, rama_corto in NOMBRES_RAMA_CORTOS.items():
+                    ocupados = fila.get(rama_original)
+                    pib = fila_pib_anio.get(RAMA_A_SECTOR_PIB.get(rama_original))
+                    if pd.notna(ocupados) and ocupados > 0 and pd.notna(pib):
+                        filas_ranking.append({"rama": rama_corto, "valor": pib * 1e9 / (ocupados * 1000)})
+                if not filas_ranking:
+                    st.info(f"Sin dato de PIB por trabajador por sector para {ciudad_ml} en {anio_sel}.")
+                else:
+                    ranking = pd.DataFrame(filas_ranking).sort_values("valor")
+                    fig_ranking = build_ranking_barras(
+                        list(ranking["rama"]), list(ranking["valor"]),
+                        f"PIB por trabajador por sector — {ciudad_ml} ({anio_sel})",
+                        colores=[COLOR_RAMA_GEIH.get(r, "#cccccc") for r in ranking["rama"]],
+                        unidad="COP", seleccionado=sector_actual_ml["nombre"] if sector_actual_ml else None,
+                    )
+                    evento_ranking = st.plotly_chart(
+                        fig_ranking, on_select="rerun", key="click_ranking_ml", selection_mode="points", width="stretch",
+                    )
+                    puntos = evento_ranking["selection"]["points"] if evento_ranking and evento_ranking.get("selection") else []
+                    ramas_ranking = list(ranking["rama"])
+                    if puntos:
+                        idx = puntos[0].get("point_index")
+                        if idx is not None and idx < len(ramas_ranking):
+                            rama_click = ramas_ranking[idx]
+                            if st.session_state.get("_ultimo_click_ranking_ml") != (ciudad_ml, anio_sel, rama_click):
+                                st.session_state["_ultimo_click_ranking_ml"] = (ciudad_ml, anio_sel, rama_click)
+                                actual = st.session_state.get("sector_actual_ml")
+                                if actual and actual["nombre"] == rama_click:
+                                    st.session_state["sector_actual_ml"] = None
+                                else:
+                                    st.session_state["sector_actual_ml"] = {
+                                        "nombre": rama_click, "color": COLOR_RAMA_GEIH.get(rama_click, "#cccccc"),
+                                    }
+                                st.rerun()
+                    st.caption(
+                        f"PIB del sector en {nombre_dep} (departamento) ÷ ocupados en esa rama en {ciudad_ml} "
+                        f"(solo la capital), para {anio_sel} -- mezcla dos niveles geográficos distintos, es "
+                        "una aproximación."
+                    )
             else:
                 fila = fila_rama.iloc[0]
                 ramas = list(NOMBRES_RAMA_CORTOS.keys())
@@ -887,24 +963,7 @@ elif variable_activa == "Mercado laboral":
                     unidad="miles de personas",
                     colores=[COLOR_RAMA_GEIH.get(e, "#cccccc") for e in etiquetas],
                 )
-
-                if modo_linea_ml == "PIB por trabajador":
-                    puntos_ml = plotly_events(
-                        fig_pastel_ml, click_event=True, override_height=420, override_width="100%",
-                        key="click_pastel_ml",
-                    )
-                    colores_rama = list(fig_pastel_ml.data[0].marker.colors)
-                    if puntos_ml:
-                        idx = puntos_ml[0].get("pointNumber")
-                        if idx is not None and idx < len(etiquetas):
-                            rama_click = etiquetas[idx]
-                            color_click = colores_rama[idx % len(colores_rama)]
-                            if st.session_state.get("_ultimo_click_pastel_ml") != (ciudad_ml, anio_sel, rama_click):
-                                st.session_state["_ultimo_click_pastel_ml"] = (ciudad_ml, anio_sel, rama_click)
-                                st.session_state["sector_actual_ml"] = {"nombre": rama_click, "color": color_click}
-                                st.rerun()
-                else:
-                    st.plotly_chart(fig_pastel_ml, width="stretch")
+                st.plotly_chart(fig_pastel_ml, width="stretch")
                 st.caption("Miles de personas, trimestre móvil Oct-Dic (GEIH, DANE).")
 
 else:  # Población

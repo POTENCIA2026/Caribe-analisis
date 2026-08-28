@@ -48,8 +48,14 @@ def _mas_opaco(color, l_max=0.60, s_min=0.55):
 # natural de cada diccionario, y de ahí en adelante todos los que dibujen
 # esa dona -- sin importar cómo estén ordenados los datos -- usan el mismo
 # color para el mismo sector/rama.
+#
+# Set3 solo trae 12 colores, pero el PIB tiene 13 sectores y la GEIH 14
+# ramas -- sin más colores, el ciclo se repite y dos sectores/ramas sin
+# nada que ver (ej. "Impuestos" y "Agricultura, ganadería, caza...") caen
+# en el MISMO color exacto. Se completa con Set1 (9 colores más) para que
+# nunca haga falta repetir.
 def _mapa_color_fijo(nombres_cortos):
-    paleta = [_mas_opaco(c) for c in px.colors.qualitative.Set3]
+    paleta = [_mas_opaco(c) for c in px.colors.qualitative.Set3 + px.colors.qualitative.Set1]
     unicos = list(dict.fromkeys(nombres_cortos))
     return {nombre: paleta[i % len(paleta)] for i, nombre in enumerate(unicos)}
 
@@ -377,6 +383,42 @@ def build_pastel(labels, values, titulo, unidad="miles de millones COP", colores
         )
     )
     fig.update_layout(title=titulo, height=420, margin=dict(l=20, r=20, t=50, b=20), showlegend=True)
+    return fig
+
+
+def build_ranking_barras(etiquetas, valores, titulo, colores=None, unidad="", seleccionado=None):
+    """Ranking horizontal de barras -- usado en Mercado laboral para "PIB
+    por trabajador" en vez de una dona. Dos razones: 1) una dona ya no
+    tiene sentido para un valor que no es "parte de un todo" (PIB por
+    trabajador no suma 100% entre ramas); 2) al usar el mismo
+    st.plotly_chart nativo que la vista de Tasa de desocupación (en vez
+    del componente plotly_events, necesario solo para las donas por el
+    bug de selección en Pie/dona de Streamlit), el título deja de saltar
+    de posición al alternar entre las dos vistas.
+
+    Se ordena ascendente antes de graficar: Plotly dibuja las barras
+    horizontales de abajo hacia arriba, así que la primera del arreglo
+    (el valor más chico) queda abajo y la más grande arriba -- el orden
+    natural de un ranking.
+    """
+    orden = sorted(range(len(valores)), key=lambda i: valores[i])
+    etiquetas_o = [etiquetas[i] for i in orden]
+    valores_o = [float(valores[i]) for i in orden]
+    colores_o = [colores[i] for i in orden] if colores is not None else None
+    lineas = ["#111827" if seleccionado and e == seleccionado else "rgba(0,0,0,0)" for e in etiquetas_o]
+    anchos = [3 if seleccionado and e == seleccionado else 0 for e in etiquetas_o]
+    hovertext = [f"<b>{e}</b><br>{v:,.0f} {unidad}<extra></extra>" for e, v in zip(etiquetas_o, valores_o)]
+    fig = go.Figure(
+        go.Bar(
+            x=valores_o, y=etiquetas_o, orientation="h",
+            marker=dict(color=colores_o, line=dict(color=lineas, width=anchos)),
+            hovertemplate=hovertext,
+        )
+    )
+    fig.update_layout(
+        title=titulo, height=420, margin=dict(l=20, r=20, t=50, b=20),
+        yaxis=dict(automargin=True),
+    )
     return fig
 
 
