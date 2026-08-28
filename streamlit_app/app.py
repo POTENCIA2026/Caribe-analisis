@@ -4,6 +4,7 @@ Ejecutar con:  streamlit run streamlit_app/app.py
 """
 import pandas as pd
 import streamlit as st
+from streamlit_plotly_events import plotly_events
 
 from data import (
     NOMBRES_CORTOS_SECTOR,
@@ -358,6 +359,13 @@ elif variable_activa == "PIB":
             "Vista de la línea", ["Absoluto", "Per cápita"], default="Absoluto",
             key="modo_linea_pib", label_visibility="collapsed",
         )
+        if not municipio_actual and st.session_state.get("sector_actual"):
+            # Volver a hacer click en la misma porción de la dona no siempre
+            # dispara un nuevo evento (el componente no reenvía un valor
+            # idéntico al anterior) -- este botón siempre funciona.
+            if st.button(f"✕ Quitar {st.session_state['sector_actual']['nombre']}", key="quitar_sector"):
+                st.session_state["sector_actual"] = None
+                st.rerun()
 
     with col_der:
         if modo_part == "Sectorial":
@@ -369,24 +377,35 @@ elif variable_activa == "PIB":
                 ]
                 fila_serie = fila_mun_anio.iloc[0] if not fila_mun_anio.empty else None
                 fig_pastel = build_pastel_municipal(fila_serie, f"Composición del PIB — {municipio_actual} ({anio_sel})")
+                st.plotly_chart(fig_pastel, width="stretch")
             else:
                 datos = pib_sector_caribe[
                     (pib_sector_caribe["Departamento"] == nombre_dep) & (pib_sector_caribe["Año"] == anio_sel)
                 ]
                 sectores = datos[~datos["Sector"].isin(["Valor agregado total", "Producto Interno Bruto"])].copy()
                 sectores["Sector_corto"] = sectores["Sector"].map(NOMBRES_CORTOS_SECTOR).fillna(sectores["Sector"])
+                # Orden fijo (mayor a menor) en los datos, no en el trace de
+                # Plotly -- así el orden visual queda igual sin importar el
+                # motor de render (st.plotly_chart vs. plotly_events).
+                sectores = sectores.sort_values("Valor_miles_millones_COP", ascending=False)
                 fig_pastel = build_pastel(
                     sectores["Sector_corto"], sectores["Valor_miles_millones_COP"],
                     f"Composición del PIB por sector — {nombre_dep} ({anio_sel})",
                 )
 
-            evento_pastel = st.plotly_chart(fig_pastel, on_select="rerun", key="click_pastel", selection_mode="points")
-            if not municipio_actual:
+                # st.plotly_chart(on_select=...) no dispara selección de forma
+                # confiable en gráficos de tipo Pie/dona (limitación conocida
+                # de Streamlit, no del código -- ver issues #8933/#8760 del
+                # repo de streamlit). plotly_events sí funciona: usa un
+                # componente propio con un listener real de "plotly_click".
+                puntos = plotly_events(
+                    fig_pastel, click_event=True, override_height=420, override_width="100%",
+                    key="click_pastel",
+                )
                 etiquetas_sector = list(sectores["Sector_corto"])
                 colores_sector = list(fig_pastel.data[0].marker.colors)
-                puntos = evento_pastel["selection"]["points"] if evento_pastel and evento_pastel.get("selection") else []
                 if puntos:
-                    idx = puntos[0].get("point_index")
+                    idx = puntos[0].get("pointNumber")
                     if idx is not None and idx < len(etiquetas_sector):
                         sector_click = etiquetas_sector[idx]
                         color_click = colores_sector[idx % len(colores_sector)]
@@ -397,19 +416,6 @@ elif variable_activa == "PIB":
                                 st.session_state["sector_actual"] = None
                             else:
                                 st.session_state["sector_actual"] = {"nombre": sector_click, "color": color_click}
-                            st.rerun()
-
-                # Lista clickeable como respaldo del click directo en la dona
-                # (el click sobre la dona no es confiable en todos los
-                # navegadores/dispositivos) -- mismo resultado, forma segura.
-                st.caption("O elija un sector:")
-                actual = st.session_state["sector_actual"]
-                cols_sector = st.columns(3)
-                for i, (etiqueta, color) in enumerate(zip(etiquetas_sector, colores_sector)):
-                    activo = bool(actual) and actual["nombre"] == etiqueta
-                    with cols_sector[i % 3]:
-                        if st.button(etiqueta, key=f"btn_sector_{i}", type="primary" if activo else "secondary", width="stretch"):
-                            st.session_state["sector_actual"] = None if activo else {"nombre": etiqueta, "color": color}
                             st.rerun()
 
         else:  # Regional / Nacional -- participación dentro de un universo mayor
@@ -500,7 +506,7 @@ elif variable_activa == "Mercado laboral":
             else:
                 fila = fila_rama.iloc[0]
                 ramas = list(NOMBRES_RAMA_CORTOS.keys())
-                valores_rama = fila[ramas].dropna()
+                valores_rama = fila[ramas].dropna().sort_values(ascending=False)
                 etiquetas = [NOMBRES_RAMA_CORTOS[c] for c in valores_rama.index]
                 fig_pastel_ml = build_pastel(
                     etiquetas, valores_rama.values, f"Ocupados por sector — {ciudad_ml} ({anio_sel})",
