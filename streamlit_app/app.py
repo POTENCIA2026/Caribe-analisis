@@ -23,6 +23,7 @@ from charts import (
     build_pastel_participacion,
     build_pyramid,
     build_radar,
+    calcular_colores_departamentos_pib,
     calcular_colores_municipios,
     COLOR_LINEA_DEFECTO,
     COLOR_RAMA_GEIH,
@@ -114,9 +115,15 @@ with col_mapa:
                 if st.session_state["variable_activa"] == "Competitividad" and st.session_state["comparar_con"] != "Ninguno"
                 else None
             )
-            fig_mapa = build_department_map(
-                mapa_caribe_geo, caribe, st.session_state["departamento_actual"], comparar_dep
+            colores_pib_dep = (
+                calcular_colores_departamentos_pib(pib_sector_caribe, caribe, anio_sel)
+                if st.session_state["variable_activa"] == "PIB" else None
             )
+            fig_mapa = build_department_map(
+                mapa_caribe_geo, caribe, st.session_state["departamento_actual"], comparar_dep, colores_pib_dep
+            )
+            if colores_pib_dep is not None:
+                st.caption("Color = mezcla ponderada de los sectores del PIB (huella económica) · borde oscuro = seleccionado")
             evento_mapa = st.plotly_chart(fig_mapa, on_select="rerun", key="click_mapa_dep", selection_mode="points")
             nuevo_dep = _procesar_click(evento_mapa, nombres_caribe, "_ultimo_click_mapa_dep")
             if nuevo_dep:
