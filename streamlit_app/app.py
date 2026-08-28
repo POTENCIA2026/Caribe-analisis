@@ -10,6 +10,8 @@ from data import (
     NOMBRES_CORTOS_SECTOR,
     NOMBRES_RAMA_CORTOS,
     ORDEN_GRUPOS_EDAD,
+    RAMA_A_SECTOR_PIB,
+    RAMAS_SECTOR_COMBINADO,
     filtrar_geojson,
     geojson_municipios_de,
     load_all,
@@ -63,6 +65,7 @@ def _init_estado():
         "municipio_actual": None,
         "comparar_con": "Ninguno",
         "sector_actual": None,
+        "sector_actual_ml": None,
         "interactuado": False,
     }
     for k, v in defaults.items():
@@ -131,6 +134,7 @@ with col_mapa:
                 st.session_state["departamento_actual"] = nuevo_dep
                 st.session_state["municipio_actual"] = None
                 st.session_state["sector_actual"] = None
+                st.session_state["sector_actual_ml"] = None
                 st.rerun()
         else:
             mapa_mun_geo = geojson_municipios_de(data["mapa_mun_geo"], mun, st.session_state["departamento_actual"])
@@ -144,6 +148,7 @@ with col_mapa:
             if nuevo_mun:
                 st.session_state["municipio_actual"] = nuevo_mun
                 st.session_state["sector_actual"] = None
+                st.session_state["sector_actual_ml"] = None
                 st.rerun()
 
             # leyenda del mapa municipal
@@ -167,6 +172,7 @@ with col_mapa:
             st.session_state["vista_municipios"] = not st.session_state["vista_municipios"]
             st.session_state["municipio_actual"] = None
             st.session_state["sector_actual"] = None
+            st.session_state["sector_actual_ml"] = None
             st.session_state["comparar_con"] = "Ninguno"
             st.rerun()
 
@@ -184,6 +190,7 @@ with col_mapa:
                         st.session_state["departamento_actual"] = nombre
                         st.session_state["municipio_actual"] = None
                         st.session_state["sector_actual"] = None
+                        st.session_state["sector_actual_ml"] = None
                         st.rerun()
         else:
             dep_lista = st.session_state["departamento_actual"]
@@ -196,6 +203,7 @@ with col_mapa:
                         if not activo:
                             st.session_state["municipio_actual"] = nombre
                             st.session_state["sector_actual"] = None
+                            st.session_state["sector_actual_ml"] = None
                             st.rerun()
 
 # ------------------------------------------------------------------
@@ -508,30 +516,72 @@ elif variable_activa == "Mercado laboral":
             f"({capital_dep or 'sin capital definida'})."
         )
     else:
+        modo_linea_ml = st.session_state.get("modo_linea_ml", "Tasa de desocupación")
+        # El click en la dona solo tiene sentido en modo "PIB por trabajador"
+        # -- no existe una tasa de desocupación por rama (los desocupados no
+        # tienen rama: por definición no están trabajando en ninguna). En
+        # modo "Tasa de desocupación" cualquier sector elegido se ignora.
+        sector_actual_ml = st.session_state.get("sector_actual_ml") if modo_linea_ml == "PIB por trabajador" else None
+
         with col_izq:
-            modo_linea_ml = st.session_state.get("modo_linea_ml", "Tasa de desocupación")
             if modo_linea_ml == "PIB por trabajador":
-                # Productividad laboral: PIB (valor agregado) municipal de la
-                # capital dividido entre sus ocupados (GEIH) -- estándar de
-                # "productividad laboral" (OCDE/OIT/DANE), no confundir con
-                # productividad total de los factores (esa necesita capital).
-                serie_pib = mun[
-                    (mun["nombre_entidad"] == ciudad_ml) & (mun["nombre_departamento"] == nombre_dep)
-                ][["anio", "valor_agregado"]].dropna()
-                serie_ocup = geih_tasas[geih_tasas["nombre_entidad"] == ciudad_ml][["anio", "ocupados"]].dropna()
-                serie = serie_pib.merge(serie_ocup, on="anio", how="inner")
-                serie = serie[serie["ocupados"] > 0].sort_values("anio")
-                y = serie["valor_agregado"] / (serie["ocupados"] * 1000)
-                fig_linea = build_evolution_line(
-                    serie["anio"], y, anio_sel,
-                    f"Evolución del PIB por trabajador — {ciudad_ml}", "PIB por trabajador (COP)",
-                )
-                st.plotly_chart(fig_linea, width="stretch")
-                st.caption(
-                    "PIB municipal (valor agregado) ÷ ocupados (GEIH, trimestre móvil Oct-Dic) -- "
-                    "productividad laboral, no productividad total (no incorpora capital). "
-                    "Cada serie tiene su propio rezago de datos, así que puede faltar el último año."
-                )
+                # Productividad laboral: PIB (valor agregado) dividido entre
+                # ocupados (GEIH) -- estándar de "productividad laboral"
+                # (OCDE/OIT/DANE), no confundir con productividad total de
+                # los factores (esa necesita capital).
+                serie_ocup_rama = geih_ocupados_rama[geih_ocupados_rama["nombre_entidad"] == ciudad_ml]
+
+                if sector_actual_ml:
+                    nombre_original_rama = next(
+                        (o for o, c in NOMBRES_RAMA_CORTOS.items() if c == sector_actual_ml["nombre"]),
+                        sector_actual_ml["nombre"],
+                    )
+                    sector_pib_original = RAMA_A_SECTOR_PIB.get(nombre_original_rama)
+                    serie_pib_sector = pib_sector_caribe[
+                        (pib_sector_caribe["Departamento"] == nombre_dep)
+                        & (pib_sector_caribe["Sector"] == sector_pib_original)
+                    ][["Año", "Valor_miles_millones_COP"]].rename(columns={"Año": "anio"}).dropna()
+                    serie_ocup = serie_ocup_rama[["anio", nombre_original_rama]].rename(
+                        columns={nombre_original_rama: "ocupados"}
+                    ).dropna()
+                    serie = serie_pib_sector.merge(serie_ocup, on="anio", how="inner")
+                    serie = serie[serie["ocupados"] > 0].sort_values("anio")
+                    y = serie["Valor_miles_millones_COP"] * 1e9 / (serie["ocupados"] * 1000)
+                    fig_linea = build_evolution_line(
+                        serie["anio"], y, anio_sel,
+                        f"Evolución de PIB por trabajador — {sector_actual_ml['nombre']} ({ciudad_ml})",
+                        "PIB por trabajador (COP)", color_linea=sector_actual_ml["color"],
+                    )
+                    st.plotly_chart(fig_linea, width="stretch")
+                    aviso_combinado = (
+                        " El PIB de este sector en el departamento incluye además otras ramas de la GEIH "
+                        "que no están contadas en estos ocupados (comercio, alojamiento y transporte van "
+                        "juntos en un solo sector de PIB) -- el número sale inflado."
+                        if nombre_original_rama in RAMAS_SECTOR_COMBINADO else ""
+                    )
+                    st.caption(
+                        f"PIB del sector en {nombre_dep} (departamento) ÷ ocupados en esa rama en "
+                        f"{ciudad_ml} (solo la capital) -- mezcla dos niveles geográficos distintos, "
+                        f"es una aproximación." + aviso_combinado
+                    )
+                else:
+                    serie_pib = mun[
+                        (mun["nombre_entidad"] == ciudad_ml) & (mun["nombre_departamento"] == nombre_dep)
+                    ][["anio", "valor_agregado"]].dropna()
+                    serie_ocup = geih_tasas[geih_tasas["nombre_entidad"] == ciudad_ml][["anio", "ocupados"]].dropna()
+                    serie = serie_pib.merge(serie_ocup, on="anio", how="inner")
+                    serie = serie[serie["ocupados"] > 0].sort_values("anio")
+                    y = serie["valor_agregado"] / (serie["ocupados"] * 1000)
+                    fig_linea = build_evolution_line(
+                        serie["anio"], y, anio_sel,
+                        f"Evolución del PIB por trabajador — {ciudad_ml}", "PIB por trabajador (COP)",
+                    )
+                    st.plotly_chart(fig_linea, width="stretch")
+                    st.caption(
+                        "PIB municipal (valor agregado) ÷ ocupados (GEIH, trimestre móvil Oct-Dic) -- "
+                        "productividad laboral, no productividad total (no incorpora capital). "
+                        "Cada serie tiene su propio rezago de datos, así que puede faltar el último año."
+                    )
             else:
                 serie = geih_tasas[geih_tasas["nombre_entidad"] == ciudad_ml].dropna(subset=["td"]).sort_values("anio")
                 fig_linea = build_evolution_line(
@@ -545,6 +595,10 @@ elif variable_activa == "Mercado laboral":
                 "Vista de la línea", ["Tasa de desocupación", "PIB por trabajador"], default="Tasa de desocupación",
                 key="modo_linea_ml", label_visibility="collapsed",
             )
+            if st.session_state.get("sector_actual_ml"):
+                if st.button(f"✕ Quitar {st.session_state['sector_actual_ml']['nombre']}", key="quitar_sector_ml"):
+                    st.session_state["sector_actual_ml"] = None
+                    st.rerun()
 
         with col_der:
             fila_rama = geih_ocupados_rama[
@@ -562,7 +616,24 @@ elif variable_activa == "Mercado laboral":
                     unidad="miles de personas",
                     colores=[COLOR_RAMA_GEIH.get(e, "#cccccc") for e in etiquetas],
                 )
-                st.plotly_chart(fig_pastel_ml, width="stretch")
+
+                if modo_linea_ml == "PIB por trabajador":
+                    puntos_ml = plotly_events(
+                        fig_pastel_ml, click_event=True, override_height=420, override_width="100%",
+                        key="click_pastel_ml",
+                    )
+                    colores_rama = list(fig_pastel_ml.data[0].marker.colors)
+                    if puntos_ml:
+                        idx = puntos_ml[0].get("pointNumber")
+                        if idx is not None and idx < len(etiquetas):
+                            rama_click = etiquetas[idx]
+                            color_click = colores_rama[idx % len(colores_rama)]
+                            if st.session_state.get("_ultimo_click_pastel_ml") != (ciudad_ml, anio_sel, rama_click):
+                                st.session_state["_ultimo_click_pastel_ml"] = (ciudad_ml, anio_sel, rama_click)
+                                st.session_state["sector_actual_ml"] = {"nombre": rama_click, "color": color_click}
+                                st.rerun()
+                else:
+                    st.plotly_chart(fig_pastel_ml, width="stretch")
                 st.caption("Miles de personas, trimestre móvil Oct-Dic (GEIH, DANE).")
 
 else:  # Población

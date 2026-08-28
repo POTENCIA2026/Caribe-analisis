@@ -72,6 +72,57 @@ NOMBRES_RAMA_CORTOS = {
     "Actividades artísticas, entretenimiento, recreación y otras actividades de servicios": "Artísticas, entretenimiento y otros servicios",
 }
 
+# Rama GEIH (empleo, por ciudad) -> Sector PIB (cuentas nacionales, por
+# departamento) -- las dos clasificaciones no son idénticas: la GEIH separa
+# "Comercio", "Alojamiento y comida" y "Transporte" en tres ramas, mientras
+# que el PIB los junta en un solo sector. Para esas tres, el PIB por
+# trabajador que se calcule va a estar inflado (el numerador incluye las
+# otras dos actividades que esa rama sola no cubre) -- se advierte en el
+# caption de la app, no aquí.
+RAMA_A_SECTOR_PIB = {
+    "Agricultura, ganadería, caza, silvicultura y pesca": "Agricultura, ganadería, caza, silvicultura y pesca",
+    "Explotación de minas y canteras": "Explotación de minas y canteras",
+    "Industrias manufactureras": "Industrias manufactureras",
+    "Suministro de electricidad gas, agua y gestión de desechos": (
+        "Suministro de electricidad, gas, vapor y aire acondicionado; distribución de agua; "
+        "evacuación y tratamiento de aguas residuales, gestión de desechos y actividades de "
+        "saneamiento ambiental"
+    ),
+    "Construcción": "Construcción",
+    "Comercio y reparación de vehículos": (
+        "Comercio al por mayor y al por menor; reparación de vehículos automotores y motocicletas; "
+        "transporte y almacenamiento; alojamiento y servicios de comida"
+    ),
+    "Alojamiento y servicios de comida": (
+        "Comercio al por mayor y al por menor; reparación de vehículos automotores y motocicletas; "
+        "transporte y almacenamiento; alojamiento y servicios de comida"
+    ),
+    "Transporte y almacenamiento": (
+        "Comercio al por mayor y al por menor; reparación de vehículos automotores y motocicletas; "
+        "transporte y almacenamiento; alojamiento y servicios de comida"
+    ),
+    "Información y comunicaciones": "Información y comunicaciones",
+    "Actividades financieras y de seguros": "Actividades financieras y de seguros",
+    "Actividades inmobiliarias": "Actividades inmobiliarias",
+    "Actividades profesionales, científicas, técnicas y servicios administrativos": (
+        "Actividades profesionales, científicas y técnicas; actividades de servicios "
+        "administrativos y de apoyo"
+    ),
+    "Administración pública y defensa, educación y atención de la salud humana": (
+        "Administración pública y defensa; planes de seguridad social de afiliación obligatoria; "
+        "educación; actividades de atención de la salud humana y de servicios sociales"
+    ),
+    "Actividades artísticas, entretenimiento, recreación y otras actividades de servicios": (
+        "Actividades artísticas, de entretenimiento y recreación y otras actividades de servicios; "
+        "actividades de los hogares individuales en calidad de empleadores; actividades no "
+        "diferenciadas de los hogares individuales como productores de bienes y servicios para uso propio"
+    ),
+}
+
+# Las 3 ramas que comparten un sector de PIB combinado -- para avisar en el
+# caption solo cuando de verdad aplica.
+RAMAS_SECTOR_COMBINADO = {"Comercio y reparación de vehículos", "Alojamiento y servicios de comida", "Transporte y almacenamiento"}
+
 
 @st.cache_data
 def _load_geojson(filename: str) -> dict:
