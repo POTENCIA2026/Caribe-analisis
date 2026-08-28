@@ -319,9 +319,6 @@ elif variable_activa == "PIB":
                 serie["anio"], y, anio_sel, f"Evolución de PIB municipal — {municipio_actual}", y_titulo,
             )
         else:
-            # El toggle Absoluto/Per cápita solo aplica al PIB total -- el PIB
-            # per cápita de UN sector no es una métrica estándar, así que si
-            # hay un sector elegido se sigue mostrando en valor absoluto.
             sector_actual = st.session_state["sector_actual"] if modo_part == "Sectorial" else None
             if sector_actual:
                 nombre_original = next(
@@ -334,10 +331,17 @@ elif variable_activa == "PIB":
                     .dropna(subset=["Valor_miles_millones_COP"])
                     .sort_values("Año")
                 )
+                if modo_linea == "Per cápita":
+                    # Valor_miles_millones_COP está en miles de millones de COP;
+                    # lo llevamos a COP planos antes de dividir por población.
+                    poblacion_por_anio = dep[dep["nombre_entidad"] == nombre_dep].set_index("anio")["poblacion_total"]
+                    y = serie["Valor_miles_millones_COP"] * 1e9 / serie["Año"].map(poblacion_por_anio)
+                    y_titulo = f"{sector_actual['nombre']} per cápita"
+                else:
+                    y = serie["Valor_miles_millones_COP"]
+                    y_titulo = f"{sector_actual['nombre']} (miles de millones COP)"
                 fig_linea = build_evolution_line(
-                    serie["Año"], serie["Valor_miles_millones_COP"], anio_sel,
-                    f"Evolución de {sector_actual['nombre']} — {nombre_dep}",
-                    f"{sector_actual['nombre']} (miles de millones COP)",
+                    serie["Año"], y, anio_sel, f"Evolución de {y_titulo} — {nombre_dep}", y_titulo,
                     color_linea=sector_actual["color"],
                 )
             else:
@@ -393,6 +397,19 @@ elif variable_activa == "PIB":
                                 st.session_state["sector_actual"] = None
                             else:
                                 st.session_state["sector_actual"] = {"nombre": sector_click, "color": color_click}
+                            st.rerun()
+
+                # Lista clickeable como respaldo del click directo en la dona
+                # (el click sobre la dona no es confiable en todos los
+                # navegadores/dispositivos) -- mismo resultado, forma segura.
+                st.caption("O elija un sector:")
+                actual = st.session_state["sector_actual"]
+                cols_sector = st.columns(3)
+                for i, (etiqueta, color) in enumerate(zip(etiquetas_sector, colores_sector)):
+                    activo = bool(actual) and actual["nombre"] == etiqueta
+                    with cols_sector[i % 3]:
+                        if st.button(etiqueta, key=f"btn_sector_{i}", type="primary" if activo else "secondary", width="stretch"):
+                            st.session_state["sector_actual"] = None if activo else {"nombre": etiqueta, "color": color}
                             st.rerun()
 
         else:  # Regional / Nacional -- participación dentro de un universo mayor
