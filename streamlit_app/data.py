@@ -112,12 +112,13 @@ def geojson_municipios_de(mapa_mun_geo: dict, mun: pd.DataFrame, nombre_departam
 @st.cache_data
 def load_all() -> dict:
     mun_full = pd.read_csv(DATA_DIR / "indicadores_municipales.csv")
-    dep_full = pd.read_csv(DATA_DIR / "indicadores_departamentales.csv")
+    dep_full = pd.read_csv(DATA_DIR / "indicadores_departamentales.csv").dropna(subset=["nombre_entidad"])
 
     mun = mun_full[mun_full["nombre_departamento"].isin(CARIBE)].copy()
     dep = dep_full[dep_full["nombre_entidad"].isin(CARIBE)].copy()
     mun = mun[mun["anio"] != 2025]
     dep = dep[dep["anio"] != 2025]
+    dep_nacional = dep_full[dep_full["anio"] != 2025].copy()  # las 33, para el PIB total del país
 
     idc = pd.read_csv(DATA_DIR / "idc_departamental.csv", sep=";")
     dep = dep.merge(idc, on=["nombre_entidad", "anio"], how="left")
@@ -161,6 +162,7 @@ def load_all() -> dict:
     return {
         "mun": mun,
         "dep": dep,
+        "dep_nacional": dep_nacional,
         "idc_pilares": idc_pilares,
         "icc_pilares": icc_pilares,
         "pib_sector_caribe": pib_sector_caribe,
