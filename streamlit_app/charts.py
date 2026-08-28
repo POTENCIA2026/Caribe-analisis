@@ -83,17 +83,18 @@ def _mezclar_con_blanco(color_hex, t):
 # ------------------------------------------------------------------
 # Mapa departamental
 # ------------------------------------------------------------------
-def build_department_map(mapa_caribe_geo, caribe, departamento_actual, comparar_con=None, colores_pib=None):
+def build_department_map(mapa_caribe_geo, caribe, departamento_actual, comparar_con=None, colores_pib=None, todos_activos=False):
     nombres = [f["properties"]["nombre_entidad"] for f in mapa_caribe_geo["features"]]
 
     if colores_pib is not None:
         # Vista PIB: cada departamento con su propio color exacto (la mezcla
         # ponderada de sus sectores), no el esquema fijo de 3 colores. La
-        # selección se marca con el borde, no con el relleno.
+        # selección se marca con el borde, no con el relleno. En la vista
+        # Total (todos_activos) los 7 quedan con el borde de "seleccionado".
         colores_lista = [colores_pib.get(n, COLOR_SIN_DATO) for n in nombres]
         colorscale, z = _construir_colorscale_categorico(colores_lista)
-        anchos = [3.5 if n == departamento_actual else 1.2 for n in nombres]
-        lineas = ["#111827" if n == departamento_actual else "white" for n in nombres]
+        anchos = [3.5 if (todos_activos or n == departamento_actual) else 1.2 for n in nombres]
+        lineas = ["#111827" if (todos_activos or n == departamento_actual) else "white" for n in nombres]
         fig = go.Figure(
             go.Choropleth(
                 geojson=mapa_caribe_geo,
@@ -111,7 +112,7 @@ def build_department_map(mapa_caribe_geo, caribe, departamento_actual, comparar_
     else:
         colores_z = []
         for nombre in nombres:
-            if nombre == departamento_actual:
+            if todos_activos or nombre == departamento_actual:
                 colores_z.append(1)
             elif comparar_con and nombre == comparar_con:
                 colores_z.append(2)
@@ -403,6 +404,30 @@ def build_pastel_participacion(etiqueta_resaltada, etiqueta_resto_medio, etiquet
     hovertext = [
         f"<b>{etiqueta_resto_mayor}</b><br>{valor_resto_mayor:,.0f}<extra></extra>",
         texto_hover_medio or f"<b>{etiqueta_resto_medio}</b><br>{valor_resto_medio:,.0f}<extra></extra>",
+        texto_hover_resaltado,
+    ]
+    fig = go.Figure(
+        go.Pie(
+            labels=labels, values=values, hole=0.35, sort=False,
+            marker=dict(colors=colores),
+            textinfo="none",
+            hovertemplate=[h if h.endswith("<extra></extra>") else h + "<extra></extra>" for h in hovertext],
+        )
+    )
+    fig.update_layout(title=titulo, height=420, margin=dict(l=20, r=20, t=50, b=20), showlegend=True)
+    return fig
+
+
+def build_pastel_participacion_total(etiqueta_resaltada, etiqueta_resto, valor_resaltado, valor_resto, titulo,
+                                      texto_hover_resaltado, texto_hover_resto=None):
+    """Versión de 2 porciones de build_pastel_participacion -- para la vista
+    Total de la Región Caribe, donde ya no hay un nivel intermedio (un
+    departamento) entre la región y el país."""
+    labels = [etiqueta_resto, etiqueta_resaltada]
+    values = [valor_resto, valor_resaltado]
+    colores = [COLOR_PARTICIPACION_CONTRASTE, COLOR_PARTICIPACION_BASE]
+    hovertext = [
+        texto_hover_resto or f"<b>{etiqueta_resto}</b><br>{valor_resto:,.0f}<extra></extra>",
         texto_hover_resaltado,
     ]
     fig = go.Figure(
