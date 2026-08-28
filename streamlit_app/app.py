@@ -25,6 +25,8 @@ from charts import (
     build_radar,
     calcular_colores_municipios,
     COLOR_LINEA_DEFECTO,
+    COLOR_RAMA_GEIH,
+    COLOR_SECTORES_PIB,
 )
 
 st.set_page_config(page_title="Caribe Colombiano — Panel departamental", layout="wide")
@@ -140,6 +142,10 @@ with col_mapa:
             # leyenda del mapa municipal
             if st.session_state["variable_activa"] == "PIB":
                 st.caption("Color = actividad predominante · intensidad = su participación en el valor agregado")
+                cols_actividad = ["actividades_primarias", "actividades_secundarias", "actividades_terciarias"]
+                sin_dato_anio = mun[mun["anio"] == anio_sel][cols_actividad].isna().all(axis=None)
+                if sin_dato_anio:
+                    st.caption(f"⚠️ Todavía no hay datos de composición del PIB por actividad para {anio_sel} -- por eso el mapa se ve gris. Pruebe con un año anterior.")
             elif st.session_state["variable_activa"] == "Población":
                 st.caption("Color = densidad poblacional (escala logarítmica), más oscuro = más denso")
             elif st.session_state["variable_activa"] == "Competitividad":
@@ -376,8 +382,15 @@ elif variable_activa == "PIB":
                     & (mun["anio"] == anio_sel)
                 ]
                 fila_serie = fila_mun_anio.iloc[0] if not fila_mun_anio.empty else None
-                fig_pastel = build_pastel_municipal(fila_serie, f"Composición del PIB — {municipio_actual} ({anio_sel})")
-                st.plotly_chart(fig_pastel, width="stretch")
+                columnas_actividad = ["actividades_primarias", "actividades_secundarias", "actividades_terciarias"]
+                sin_dato_actividad = fila_serie is None or fila_serie[columnas_actividad].isna().all()
+                if sin_dato_actividad:
+                    # Igual que el PIB municipal: la composición por actividad
+                    # también llega con un año de rezago frente al departamental.
+                    st.info(f"No hay dato de composición del PIB para {municipio_actual} en {anio_sel}.")
+                else:
+                    fig_pastel = build_pastel_municipal(fila_serie, f"Composición del PIB — {municipio_actual} ({anio_sel})")
+                    st.plotly_chart(fig_pastel, width="stretch")
             else:
                 datos = pib_sector_caribe[
                     (pib_sector_caribe["Departamento"] == nombre_dep) & (pib_sector_caribe["Año"] == anio_sel)
@@ -391,6 +404,7 @@ elif variable_activa == "PIB":
                 fig_pastel = build_pastel(
                     sectores["Sector_corto"], sectores["Valor_miles_millones_COP"],
                     f"Composición del PIB por sector — {nombre_dep} ({anio_sel})",
+                    colores=[COLOR_SECTORES_PIB.get(s, "#cccccc") for s in sectores["Sector_corto"]],
                 )
 
                 # st.plotly_chart(on_select=...) no dispara selección de forma
@@ -511,6 +525,7 @@ elif variable_activa == "Mercado laboral":
                 fig_pastel_ml = build_pastel(
                     etiquetas, valores_rama.values, f"Ocupados por sector — {ciudad_ml} ({anio_sel})",
                     unidad="miles de personas",
+                    colores=[COLOR_RAMA_GEIH.get(e, "#cccccc") for e in etiquetas],
                 )
                 st.plotly_chart(fig_pastel_ml, width="stretch")
                 st.caption("Miles de personas, trimestre móvil Oct-Dic (GEIH, DANE).")
