@@ -300,6 +300,9 @@ variable_activa = st.session_state["variable_activa"]
 col_izq, col_der = st.columns(2)
 
 if variable_activa == "Competitividad":
+    if not municipio_actual:
+        st.subheader("La competitividad como medida de desarrollo", divider="gray")
+
     comparar_con = st.selectbox("Comparar con:", opciones_comparar, key="comparar_con")
 
     if municipio_actual:
