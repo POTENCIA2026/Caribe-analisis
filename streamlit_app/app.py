@@ -509,14 +509,42 @@ elif variable_activa == "Mercado laboral":
         )
     else:
         with col_izq:
-            serie = geih_tasas[geih_tasas["nombre_entidad"] == ciudad_ml].dropna(subset=["td"]).sort_values("anio")
-            fig_linea = build_evolution_line(
-                serie["anio"], serie["td"], anio_sel,
-                f"Evolución de la Tasa de Desocupación — {ciudad_ml}", "Tasa de desocupación (%)",
-                unidad="%",
+            modo_linea_ml = st.session_state.get("modo_linea_ml", "Tasa de desocupación")
+            if modo_linea_ml == "PIB por trabajador":
+                # Productividad laboral: PIB (valor agregado) municipal de la
+                # capital dividido entre sus ocupados (GEIH) -- estándar de
+                # "productividad laboral" (OCDE/OIT/DANE), no confundir con
+                # productividad total de los factores (esa necesita capital).
+                serie_pib = mun[
+                    (mun["nombre_entidad"] == ciudad_ml) & (mun["nombre_departamento"] == nombre_dep)
+                ][["anio", "valor_agregado"]].dropna()
+                serie_ocup = geih_tasas[geih_tasas["nombre_entidad"] == ciudad_ml][["anio", "ocupados"]].dropna()
+                serie = serie_pib.merge(serie_ocup, on="anio", how="inner")
+                serie = serie[serie["ocupados"] > 0].sort_values("anio")
+                y = serie["valor_agregado"] / (serie["ocupados"] * 1000)
+                fig_linea = build_evolution_line(
+                    serie["anio"], y, anio_sel,
+                    f"Evolución del PIB por trabajador — {ciudad_ml}", "PIB por trabajador (COP)",
+                )
+                st.plotly_chart(fig_linea, width="stretch")
+                st.caption(
+                    "PIB municipal (valor agregado) ÷ ocupados (GEIH, trimestre móvil Oct-Dic) -- "
+                    "productividad laboral, no productividad total (no incorpora capital). "
+                    "Cada serie tiene su propio rezago de datos, así que puede faltar el último año."
+                )
+            else:
+                serie = geih_tasas[geih_tasas["nombre_entidad"] == ciudad_ml].dropna(subset=["td"]).sort_values("anio")
+                fig_linea = build_evolution_line(
+                    serie["anio"], serie["td"], anio_sel,
+                    f"Evolución de la Tasa de Desocupación — {ciudad_ml}", "Tasa de desocupación (%)",
+                    unidad="%",
+                )
+                st.plotly_chart(fig_linea, width="stretch")
+                st.caption("Trimestre móvil Oct-Dic de cada año (GEIH, DANE).")
+            st.segmented_control(
+                "Vista de la línea", ["Tasa de desocupación", "PIB por trabajador"], default="Tasa de desocupación",
+                key="modo_linea_ml", label_visibility="collapsed",
             )
-            st.plotly_chart(fig_linea, width="stretch")
-            st.caption("Trimestre móvil Oct-Dic de cada año (GEIH, DANE).")
 
         with col_der:
             fila_rama = geih_ocupados_rama[
