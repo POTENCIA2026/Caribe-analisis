@@ -14,6 +14,33 @@ import plotly.express as px
 
 from data import NOMBRES_CORTOS_SECTOR, NOMBRES_RAMA_CORTOS, ORDEN_GRUPOS_EDAD
 
+def _a_rgb(color):
+    """Acepta "#rrggbb" o "rgb(r, g, b)" (así vienen las paletas
+    qualitative de Plotly, ej. Set3) y devuelve una tupla (r, g, b)."""
+    color = color.strip()
+    if color.startswith("#"):
+        color = color.lstrip("#")
+        return tuple(int(color[i:i + 2], 16) for i in (0, 2, 4))
+    m = re.match(r"rgba?\(([^)]+)\)", color)
+    if m:
+        return tuple(round(float(x)) for x in m.group(1).split(",")[:3])
+    raise ValueError(f"Formato de color no soportado: {color!r}")
+
+
+def _mas_opaco(color, l_max=0.60, s_min=0.55):
+    """"Set3" es una paleta pastel: varios de sus colores son casi blancos
+    (L muy alto) o, en un caso, gris puro (S=0). En la dona se ven demasiado
+    parecidos entre sí -- y al amarillo -- así que se les baja el tope de
+    luminosidad y se les sube el piso de saturación antes de usarlos, sin
+    tocar el matiz (el sector sigue siendo "el mismo color", solo más sólido)."""
+    r, g, b = _a_rgb(color)
+    h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+    l = min(l, l_max)
+    s = max(s, s_min)
+    r, g, b = colorsys.hls_to_rgb(h, l, s)
+    return f"#{round(r * 255):02x}{round(g * 255):02x}{round(b * 255):02x}"
+
+
 # Color fijo por sector/rama -- no por posición. Si el color saliera de
 # "px.colors.qualitative.Set3" indexado por la posición de cada uno en la
 # dona, un mismo sector cambiaría de color entre departamentos (u ordenado
@@ -22,7 +49,7 @@ from data import NOMBRES_CORTOS_SECTOR, NOMBRES_RAMA_CORTOS, ORDEN_GRUPOS_EDAD
 # esa dona -- sin importar cómo estén ordenados los datos -- usan el mismo
 # color para el mismo sector/rama.
 def _mapa_color_fijo(nombres_cortos):
-    paleta = px.colors.qualitative.Set3
+    paleta = [_mas_opaco(c) for c in px.colors.qualitative.Set3]
     unicos = list(dict.fromkeys(nombres_cortos))
     return {nombre: paleta[i % len(paleta)] for i, nombre in enumerate(unicos)}
 
@@ -43,19 +70,6 @@ COLOR_SIN_DATO = "#d9d9d9"
 COLOR_NEUTRO = "#93C5FD"
 COLOR_LINEA_DEFECTO = "#262c60"
 COLOR_PUNTO_ANIO = "#F59E0B"
-
-
-def _a_rgb(color):
-    """Acepta "#rrggbb" o "rgb(r, g, b)" (así vienen las paletas
-    qualitative de Plotly, ej. Set3) y devuelve una tupla (r, g, b)."""
-    color = color.strip()
-    if color.startswith("#"):
-        color = color.lstrip("#")
-        return tuple(int(color[i:i + 2], 16) for i in (0, 2, 4))
-    m = re.match(r"rgba?\(([^)]+)\)", color)
-    if m:
-        return tuple(round(float(x)) for x in m.group(1).split(",")[:3])
-    raise ValueError(f"Formato de color no soportado: {color!r}")
 
 
 def _mezclar_con_blanco(color_hex, t):
@@ -351,7 +365,7 @@ def build_pastel(labels, values, titulo, unidad="miles de millones COP", colores
         for etiqueta, valor in zip(labels, values)
     ]
     if colores is None:
-        paleta = px.colors.qualitative.Set3
+        paleta = [_mas_opaco(c) for c in px.colors.qualitative.Set3]
         colores = [paleta[i % len(paleta)] for i in range(len(labels))]
     fig = go.Figure(
         go.Pie(
