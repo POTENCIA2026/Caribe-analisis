@@ -226,12 +226,22 @@ def build_evolution_line(x, y, anio_actual, titulo, y_titulo, color_linea=COLOR_
 # Dona de PIB por sector
 # ------------------------------------------------------------------
 def build_pastel(labels, values, titulo, unidad="miles de millones COP"):
+    # Hover pre-formateado en Python (no con el mini-lenguaje %{value:,.0f}
+    # de Plotly) -- el componente plotly_events usado para el click en la
+    # dona sectorial trae una versión de Plotly.js más vieja que no soporta
+    # bien ese formato numérico y mostraba valores rotos (ej. "1" en vez del
+    # valor real). Precalculando el texto evitamos depender de eso.
+    total = sum(values) or 1
+    hovertext = [
+        f"<b>{etiqueta}</b><br>{valor:,.0f} {unidad}<br>{valor / total * 100:.1f}%<extra></extra>"
+        for etiqueta, valor in zip(labels, values)
+    ]
     fig = go.Figure(
         go.Pie(
-            labels=labels, values=values, hole=0.35,
+            labels=labels, values=values, hole=0.35, sort=False,
             marker=dict(colors=px.colors.qualitative.Set3),
             textinfo="none",
-            hovertemplate=f"<b>%{{label}}</b><br>%{{value:,.0f}} {unidad}<br>%{{percent}}<extra></extra>",
+            hovertemplate=hovertext,
         )
     )
     fig.update_layout(title=titulo, height=420, margin=dict(l=20, r=20, t=50, b=20), showlegend=True)
@@ -266,7 +276,7 @@ def build_pastel_participacion(etiqueta_resaltada, etiqueta_resto_medio, etiquet
     ]
     fig = go.Figure(
         go.Pie(
-            labels=labels, values=values, hole=0.35,
+            labels=labels, values=values, hole=0.35, sort=False,
             marker=dict(colors=colores),
             textinfo="none",
             hovertemplate=[h if h.endswith("<extra></extra>") else h + "<extra></extra>" for h in hovertext],
