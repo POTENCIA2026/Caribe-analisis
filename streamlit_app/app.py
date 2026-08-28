@@ -380,15 +380,40 @@ if variable_activa == "Competitividad":
         st.plotly_chart(fig_radar, width="stretch")
 
 elif variable_activa == "PIB":
-    # Los toggles se leen de session_state ANTES de instanciar el widget (que
-    # se instancia más abajo, debajo de cada gráfico, para que aparezca ahí
-    # visualmente) -- Streamlit ya resuelve el valor del widget en
-    # session_state al inicio del rerun, así que esto es seguro.
-    modo_linea = st.session_state.get("modo_linea_pib", "Absoluto")
-    modo_part = st.session_state.get("modo_participacion_pib", "Sectorial")
+    # Los widgets se instancian AQUÍ (antes de construir los gráficos) y se
+    # usa directamente su valor de retorno -- NO st.session_state.get(key)
+    # leído por adelantado. Ese atajo parecía seguro ("Streamlit resuelve el
+    # valor del widget en session_state al inicio del rerun") pero solo
+    # funciona cuando el rerun lo dispara el propio widget: si lo dispara
+    # OTRO control (ej. cambiar de departamento, que hace su propio
+    # st.rerun()), la lectura anticipada devuelve el valor por defecto en
+    # vez del último elegido, y el toggle "se olvida" de su estado. Para
+    # mantener el toggle visualmente DEBAJO del gráfico (como antes) sin
+    # volver a ese atajo, se reserva el espacio del gráfico con st.empty()
+    # antes de instanciar el widget, y se llena después.
+    with col_izq:
+        slot_izq = st.empty()
+        modo_linea = st.segmented_control(
+            "Vista de la línea", ["Absoluto", "Per cápita"], default="Absoluto",
+            key="modo_linea_pib", label_visibility="collapsed", persist_state="session",
+        )
+        if not municipio_actual and st.session_state.get("sector_actual"):
+            # Volver a hacer click en la misma porción de la dona no siempre
+            # dispara un nuevo evento (el componente no reenvía un valor
+            # idéntico al anterior) -- este botón siempre funciona.
+            if st.button(f"✕ Quitar {st.session_state['sector_actual']['nombre']}", key="quitar_sector"):
+                st.session_state["sector_actual"] = None
+                st.rerun()
+    with col_der:
+        slot_der = st.empty()
+        modo_part = st.segmented_control(
+            "Vista de participación", ["Sectorial", "Regional/Nacional"], default="Sectorial",
+            key="modo_participacion_pib", label_visibility="collapsed", persist_state="session",
+        )
+
     ambito_pib = "Región Caribe" if modo_total else nombre_dep
 
-    with col_izq:
+    with slot_izq.container():
         if modo_total:
             sector_actual = st.session_state["sector_actual"] if modo_part == "Sectorial" else None
             if sector_actual:
@@ -471,19 +496,8 @@ elif variable_activa == "PIB":
                     serie["anio"], y, anio_sel, f"Evolución de {y_titulo} — {nombre_dep}", y_titulo,
                 )
         st.plotly_chart(fig_linea, width="stretch")
-        st.segmented_control(
-            "Vista de la línea", ["Absoluto", "Per cápita"], default="Absoluto",
-            key="modo_linea_pib", label_visibility="collapsed",
-        )
-        if not municipio_actual and st.session_state.get("sector_actual"):
-            # Volver a hacer click en la misma porción de la dona no siempre
-            # dispara un nuevo evento (el componente no reenvía un valor
-            # idéntico al anterior) -- este botón siempre funciona.
-            if st.button(f"✕ Quitar {st.session_state['sector_actual']['nombre']}", key="quitar_sector"):
-                st.session_state["sector_actual"] = None
-                st.rerun()
 
-    with col_der:
+    with slot_der.container():
         if modo_part == "Sectorial":
             if modo_total:
                 datos = pib_sector_caribe[pib_sector_caribe["Año"] == anio_sel]
@@ -645,19 +659,32 @@ elif variable_activa == "PIB":
             if fig_pastel is not None:
                 st.plotly_chart(fig_pastel, width="stretch")
 
-        st.segmented_control(
-            "Vista de participación", ["Sectorial", "Regional/Nacional"], default="Sectorial",
-            key="modo_participacion_pib", label_visibility="collapsed",
-        )
-
 elif variable_activa == "Mercado laboral":
+    # El widget se instancia una sola vez aquí (antes de construir el
+    # gráfico) y se usa directamente su valor de retorno -- leerlo por
+    # adelantado vía st.session_state.get(key) parecía seguro pero se
+    # "olvida" del valor elegido en cuanto el rerun lo dispara OTRO control
+    # (cambiar de departamento/ciudad, que hace su propio st.rerun()) en vez
+    # del propio widget. st.empty() reserva el lugar del gráfico para que el
+    # toggle se siga viendo debajo, como antes.
+    if modo_total or ciudad_ml:
+        with col_izq:
+            slot_izq_ml = st.empty()
+            modo_linea_ml = st.segmented_control(
+                "Vista de la línea", ["Tasa de desocupación", "PIB por trabajador"], default="Tasa de desocupación",
+                key="modo_linea_ml", label_visibility="collapsed", persist_state="session",
+            )
+            if not modo_total and st.session_state.get("sector_actual_ml"):
+                if st.button(f"✕ Quitar {st.session_state['sector_actual_ml']['nombre']}", key="quitar_sector_ml"):
+                    st.session_state["sector_actual_ml"] = None
+                    st.rerun()
+
     if modo_total:
         # Vista Total: se agregan las 7 ciudades capitales (la GEIH no cubre
         # nada más) -- sin desglose por sector, eso queda solo en la vista
         # de un departamento a la vez.
         capitales_caribe = list(capitales.values())
-        modo_linea_ml = st.session_state.get("modo_linea_ml", "Tasa de desocupación")
-        with col_izq:
+        with slot_izq_ml.container():
             if modo_linea_ml == "PIB por trabajador":
                 base = mun[mun["nombre_entidad"].isin(capitales_caribe)][["anio", "nombre_entidad", "valor_agregado"]].dropna()
                 ocup = geih_tasas[geih_tasas["nombre_entidad"].isin(capitales_caribe)][["anio", "nombre_entidad", "ocupados"]].dropna()
@@ -687,10 +714,6 @@ elif variable_activa == "Mercado laboral":
                 )
                 st.plotly_chart(fig_linea, width="stretch")
                 st.caption("Desocupados ÷ fuerza de trabajo, sumados entre las 7 ciudades capitales (GEIH, DANE).")
-            st.segmented_control(
-                "Vista de la línea", ["Tasa de desocupación", "PIB por trabajador"], default="Tasa de desocupación",
-                key="modo_linea_ml", label_visibility="collapsed",
-            )
         with col_der:
             fila_rama_total = geih_ocupados_rama[
                 geih_ocupados_rama["nombre_entidad"].isin(capitales_caribe) & (geih_ocupados_rama["anio"] == anio_sel)
@@ -714,14 +737,13 @@ elif variable_activa == "Mercado laboral":
             f"({capital_dep or 'sin capital definida'})."
         )
     else:
-        modo_linea_ml = st.session_state.get("modo_linea_ml", "Tasa de desocupación")
         # El click en la dona solo tiene sentido en modo "PIB por trabajador"
         # -- no existe una tasa de desocupación por rama (los desocupados no
         # tienen rama: por definición no están trabajando en ninguna). En
         # modo "Tasa de desocupación" cualquier sector elegido se ignora.
         sector_actual_ml = st.session_state.get("sector_actual_ml") if modo_linea_ml == "PIB por trabajador" else None
 
-        with col_izq:
+        with slot_izq_ml.container():
             if modo_linea_ml == "PIB por trabajador":
                 # Productividad laboral: PIB (valor agregado) dividido entre
                 # ocupados (GEIH) -- estándar de "productividad laboral"
@@ -789,14 +811,6 @@ elif variable_activa == "Mercado laboral":
                 )
                 st.plotly_chart(fig_linea, width="stretch")
                 st.caption("Trimestre móvil Oct-Dic de cada año (GEIH, DANE).")
-            st.segmented_control(
-                "Vista de la línea", ["Tasa de desocupación", "PIB por trabajador"], default="Tasa de desocupación",
-                key="modo_linea_ml", label_visibility="collapsed",
-            )
-            if st.session_state.get("sector_actual_ml"):
-                if st.button(f"✕ Quitar {st.session_state['sector_actual_ml']['nombre']}", key="quitar_sector_ml"):
-                    st.session_state["sector_actual_ml"] = None
-                    st.rerun()
 
         with col_der:
             fila_rama = geih_ocupados_rama[
