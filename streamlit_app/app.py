@@ -682,13 +682,24 @@ elif variable_activa == "PIB":
         st.info(f"No hay datos de PIB municipal per cápita para {anio_sel}.")
     else:
         datos_disp = datos_disp.assign(pib_percapita=datos_disp["valor_agregado"] / datos_disp["poblacion_total"])
+        dep_anio_disp = dep[(dep["anio"] == anio_sel) & (dep["nombre_entidad"].isin(caribe))].dropna(
+            subset=["pib", "poblacion_total"]
+        )
+        promedios_departamento = {
+            fila["nombre_entidad"]: fila["pib"] / fila["poblacion_total"] for _, fila in dep_anio_disp.iterrows()
+        }
+        promedio_regional = (
+            dep_anio_disp["pib"].sum() / dep_anio_disp["poblacion_total"].sum() if not dep_anio_disp.empty else None
+        )
         fig_disp = build_dispersion_municipios(
             datos_disp["nombre_departamento"], datos_disp["nombre_entidad"], datos_disp["pib_percapita"],
             f"PIB per cápita municipal — Región Caribe ({anio_sel})", "PIB per cápita (COP)",
+            capitales=capitales, promedios_departamento=promedios_departamento, promedio_regional=promedio_regional,
         )
         st.plotly_chart(fig_disp, width="stretch")
         st.caption(
-            "Cada punto es un municipio. El PIB municipal (valor agregado) suele llegar con un año de "
+            "Punto pequeño = ciudad capital · cuadrado = PIB per cápita del departamento · línea vertical = "
+            "promedio de la Región Caribe. Cada punto es un municipio; el PIB municipal (valor agregado) suele llegar con un año de "
             "rezago frente al departamental, así que puede faltar el año más reciente."
         )
 
