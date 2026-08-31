@@ -610,6 +610,15 @@ def build_pyramid(hombres_frente, mujeres_frente, titulo, hombres_fondo=None, mu
     return fig
 
 
+# Nombre oficial larguísimo -- si se deja tal cual, el margen izquierdo del
+# gráfico crece para darle espacio a su etiqueta y todo el resto del
+# gráfico (los demás departamentos, con nombres normales) se corre hacia la
+# derecha. Se acorta solo para el eje/hover de este gráfico.
+NOMBRES_DEPARTAMENTO_CORTOS = {
+    "ARCHIPIÉLAGO DE SAN ANDRÉS, PROVIDENCIA Y SANTA CATALINA": "SAN ANDRÉS Y PROVIDENCIA",
+}
+
+
 # ------------------------------------------------------------------
 # Dispersión tipo "strip plot" -- un punto por municipio, agrupados por
 # departamento en el eje Y. Inspirado en los gráficos de Bruegel/Eurostat
@@ -620,7 +629,7 @@ def build_pyramid(hombres_frente, mujeres_frente, titulo, hombres_fondo=None, mu
 def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_titulo, color="#2a78d6",
                                  capitales=None, promedios_departamento=None, promedio_regional=None,
                                  etiqueta_promedio="Promedio Región Caribe"):
-    departamentos = list(departamentos)
+    departamentos = [NOMBRES_DEPARTAMENTO_CORTOS.get(d, d) for d in departamentos]
     municipios = list(municipios)
     valores = [float(v) for v in valores]
     orden = sorted(set(departamentos))
@@ -629,6 +638,8 @@ def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_ti
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=valores, y=departamentos, mode="markers",
+        # "color" puede ser un solo color (todos los puntos iguales) o una
+        # lista con un color por punto -- Plotly acepta ambos tal cual.
         marker=dict(size=10, color=color, opacity=0.75, line=dict(width=1, color="white")),
         hovertemplate=hovertext, name="Municipios",
     ))
@@ -648,6 +659,7 @@ def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_ti
     # Promedio departamental: un cuadrado por fila, en el PIB per cápita
     # real del departamento (no el promedio simple de sus municipios).
     if promedios_departamento:
+        promedios_departamento = {NOMBRES_DEPARTAMENTO_CORTOS.get(d, d): v for d, v in promedios_departamento.items()}
         deps_p = [d for d in orden if d in promedios_departamento]
         vals_p = [promedios_departamento[d] for d in deps_p]
         fig.add_trace(go.Scatter(
@@ -666,9 +678,14 @@ def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_ti
     fig.update_layout(
         title=titulo,
         height=max(560, 110 + 75 * len(orden)),
-        margin=dict(l=20, r=20, t=50, b=40),
+        # Margen izquierdo fijo (automargin=False) -- si no, el margen crece
+        # solo para darle espacio a la etiqueta más larga que haya en pantalla
+        # en ESE momento, y el gráfico entero se corre al activar/desactivar
+        # "incluir el resto de Colombia". Con un margen fijo, las proporciones
+        # se mantienen iguales sin importar qué departamentos estén.
+        margin=dict(l=170, r=20, t=50, b=40),
         xaxis=dict(title=x_titulo),
-        yaxis=dict(categoryorder="array", categoryarray=orden, autorange="reversed"),
+        yaxis=dict(categoryorder="array", categoryarray=orden, autorange="reversed", automargin=False),
         legend=dict(orientation="h", y=-0.1),
     )
     return fig
