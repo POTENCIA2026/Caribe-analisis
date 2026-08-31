@@ -1,0 +1,668 @@
+nombre_departamento;periodo;anio_inicio;anio_fin;total_diputados;partido;curules;partido_normalizado
+AMAZONAS;2016-2019;2016;2019;11;La U;2;Partido de la U
+AMAZONAS;2016-2019;2016;2019;11;Alianza Verde;1;Alianza Verde
+AMAZONAS;2016-2019;2016;2019;11;ASI;1;ASI (Alianza Social Independiente)
+AMAZONAS;2016-2019;2016;2019;11;Cambio Radical;1;Cambio Radical
+AMAZONAS;2016-2019;2016;2019;11;Centro Democrático;1;Centro Democrático
+AMAZONAS;2016-2019;2016;2019;11;Conservador;1;Partido Conservador
+AMAZONAS;2016-2019;2016;2019;11;Liberal;1;Partido Liberal
+AMAZONAS;2016-2019;2016;2019;11;MAIS;1;MAIS
+AMAZONAS;2016-2019;2016;2019;11;Opción Ciudadana;1;Opción Ciudadana
+AMAZONAS;2016-2019;2016;2019;11;Polo Democrático;1;Polo Democrático Alternativo
+ANTIOQUIA;2016-2019;2016;2019;26;Centro Democrático;7;Centro Democrático
+ANTIOQUIA;2016-2019;2016;2019;26;Liberal;5;Partido Liberal
+ANTIOQUIA;2016-2019;2016;2019;26;Conservador;4;Partido Conservador
+ANTIOQUIA;2016-2019;2016;2019;26;La U;4;Partido de la U
+ANTIOQUIA;2016-2019;2016;2019;26;Alianza Verde;2;Alianza Verde
+ANTIOQUIA;2016-2019;2016;2019;26;Cambio Radical;2;Cambio Radical
+ANTIOQUIA;2016-2019;2016;2019;26;ASI;1;ASI (Alianza Social Independiente)
+ANTIOQUIA;2016-2019;2016;2019;26;Polo Democrático;1;Polo Democrático Alternativo
+ARAUCA;2016-2019;2016;2019;11;La U;4;Partido de la U
+ARAUCA;2016-2019;2016;2019;11;Liberal;3;Partido Liberal
+ARAUCA;2016-2019;2016;2019;11;Alianza Verde;1;Alianza Verde
+ARAUCA;2016-2019;2016;2019;11;ASI;1;ASI (Alianza Social Independiente)
+ARAUCA;2016-2019;2016;2019;11;Cambio Radical;1;Cambio Radical
+ARAUCA;2016-2019;2016;2019;11;Polo Democrático;1;Polo Democrático Alternativo
+ATLÁNTICO;2016-2019;2016;2019;14;Cambio Radical;5;Cambio Radical
+ATLÁNTICO;2016-2019;2016;2019;14;Conservador;4;Partido Conservador
+ATLÁNTICO;2016-2019;2016;2019;14;La U;3;Partido de la U
+ATLÁNTICO;2016-2019;2016;2019;14;Liberal;2;Partido Liberal
+BOLÍVAR;2016-2019;2016;2019;14;Cambio Radical;4;Cambio Radical
+BOLÍVAR;2016-2019;2016;2019;14;Liberal;4;Partido Liberal
+BOLÍVAR;2016-2019;2016;2019;14;La U;3;Partido de la U
+BOLÍVAR;2016-2019;2016;2019;14;Conservador;2;Partido Conservador
+BOLÍVAR;2016-2019;2016;2019;14;Centro Democrático;1;Centro Democrático
+BOYACÁ;2016-2019;2016;2019;16;Cambio Radical;5;Cambio Radical
+BOYACÁ;2016-2019;2016;2019;16;Alianza Verde;3;Alianza Verde
+BOYACÁ;2016-2019;2016;2019;16;Centro Democrático;2;Centro Democrático
+BOYACÁ;2016-2019;2016;2019;16;Conservador;2;Partido Conservador
+BOYACÁ;2016-2019;2016;2019;16;La U;2;Partido de la U
+BOYACÁ;2016-2019;2016;2019;16;Liberal;2;Partido Liberal
+CALDAS;2016-2019;2016;2019;14;La U;5;Partido de la U
+CALDAS;2016-2019;2016;2019;14;Conservador;3;Partido Conservador
+CALDAS;2016-2019;2016;2019;14;Liberal;3;Partido Liberal
+CALDAS;2016-2019;2016;2019;14;Centro Democrático;2;Centro Democrático
+CALDAS;2016-2019;2016;2019;14;Cambio Radical;1;Cambio Radical
+CAQUETÁ;2016-2019;2016;2019;11;Conservador;2;Partido Conservador
+CAQUETÁ;2016-2019;2016;2019;11;Liberal;2;Partido Liberal
+CAQUETÁ;2016-2019;2016;2019;11;MIRA;2;MIRA
+CAQUETÁ;2016-2019;2016;2019;11;Alianza Verde;1;Alianza Verde
+CAQUETÁ;2016-2019;2016;2019;11;Cambio Radical;1;Cambio Radical
+CAQUETÁ;2016-2019;2016;2019;11;Centro Democrático;1;Centro Democrático
+CAQUETÁ;2016-2019;2016;2019;11;La U;1;Partido de la U
+CAQUETÁ;2016-2019;2016;2019;11;Polo Democrático;1;Polo Democrático Alternativo
+CASANARE;2016-2019;2016;2019;11;Alianza Verde;2;Alianza Verde
+CASANARE;2016-2019;2016;2019;11;Cambio Radical;2;Cambio Radical
+CASANARE;2016-2019;2016;2019;11;La U;2;Partido de la U
+CASANARE;2016-2019;2016;2019;11;Liberal;2;Partido Liberal
+CASANARE;2016-2019;2016;2019;11;ASI;1;ASI (Alianza Social Independiente)
+CASANARE;2016-2019;2016;2019;11;Centro Democrático;1;Centro Democrático
+CASANARE;2016-2019;2016;2019;11;Opción Ciudadana;1;Opción Ciudadana
+CAUCA;2016-2019;2016;2019;13;La U;3;Partido de la U
+CAUCA;2016-2019;2016;2019;13;Liberal;3;Partido Liberal
+CAUCA;2016-2019;2016;2019;13;Alianza Verde;2;Alianza Verde
+CAUCA;2016-2019;2016;2019;13;ASI;1;ASI (Alianza Social Independiente)
+CAUCA;2016-2019;2016;2019;13;Cambio Radical;1;Cambio Radical
+CAUCA;2016-2019;2016;2019;13;Conservador;1;Partido Conservador
+CAUCA;2016-2019;2016;2019;13;MAIS;1;MAIS
+CAUCA;2016-2019;2016;2019;13;MIRA;1;MIRA
+CESAR;2016-2019;2016;2019;11;La U;3;Partido de la U
+CESAR;2016-2019;2016;2019;11;Cambio Radical;2;Cambio Radical
+CESAR;2016-2019;2016;2019;11;Conservador;2;Partido Conservador
+CESAR;2016-2019;2016;2019;11;Alianza Verde;1;Alianza Verde
+CESAR;2016-2019;2016;2019;11;ASI;1;ASI (Alianza Social Independiente)
+CESAR;2016-2019;2016;2019;11;Liberal;1;Partido Liberal
+CESAR;2016-2019;2016;2019;11;Opción Ciudadana;1;Opción Ciudadana
+CHOCÓ;2016-2019;2016;2019;11;Liberal;3;Partido Liberal
+CHOCÓ;2016-2019;2016;2019;11;Cambio Radical;2;Cambio Radical
+CHOCÓ;2016-2019;2016;2019;11;Conservador;2;Partido Conservador
+CHOCÓ;2016-2019;2016;2019;11;La U;2;Partido de la U
+CHOCÓ;2016-2019;2016;2019;11;Alianza Verde;1;Alianza Verde
+CHOCÓ;2016-2019;2016;2019;11;Opción Ciudadana;1;Opción Ciudadana
+CUNDINAMARCA;2016-2019;2016;2019;16;La U;5;Partido de la U
+CUNDINAMARCA;2016-2019;2016;2019;16;Cambio Radical;3;Cambio Radical
+CUNDINAMARCA;2016-2019;2016;2019;16;Centro Democrático;2;Centro Democrático
+CUNDINAMARCA;2016-2019;2016;2019;16;Conservador;2;Partido Conservador
+CUNDINAMARCA;2016-2019;2016;2019;16;Liberal;2;Partido Liberal
+CUNDINAMARCA;2016-2019;2016;2019;16;Alianza Verde;1;Alianza Verde
+CUNDINAMARCA;2016-2019;2016;2019;16;Opción Ciudadana;1;Opción Ciudadana
+CÓRDOBA;2016-2019;2016;2019;13;La U;5;Partido de la U
+CÓRDOBA;2016-2019;2016;2019;13;Liberal;3;Partido Liberal
+CÓRDOBA;2016-2019;2016;2019;13;Conservador;2;Partido Conservador
+CÓRDOBA;2016-2019;2016;2019;13;Opción Ciudadana;2;Opción Ciudadana
+CÓRDOBA;2016-2019;2016;2019;13;Centro Democrático;1;Centro Democrático
+GUAINÍA;2016-2019;2016;2019;11;Cambio Radical;3;Cambio Radical
+GUAINÍA;2016-2019;2016;2019;11;AICO;1;AICO
+GUAINÍA;2016-2019;2016;2019;11;Alianza Verde;1;Alianza Verde
+GUAINÍA;2016-2019;2016;2019;11;ASI;1;ASI (Alianza Social Independiente)
+GUAINÍA;2016-2019;2016;2019;11;Centro Democrático;1;Centro Democrático
+GUAINÍA;2016-2019;2016;2019;11;Conservador;1;Partido Conservador
+GUAINÍA;2016-2019;2016;2019;11;La U;1;Partido de la U
+GUAINÍA;2016-2019;2016;2019;11;Liberal;1;Partido Liberal
+GUAINÍA;2016-2019;2016;2019;11;Polo Democrático;1;Polo Democrático Alternativo
+GUAVIARE;2016-2019;2016;2019;11;La U;3;Partido de la U
+GUAVIARE;2016-2019;2016;2019;11;Cambio Radical;2;Cambio Radical
+GUAVIARE;2016-2019;2016;2019;11;Conservador;2;Partido Conservador
+GUAVIARE;2016-2019;2016;2019;11;AICO;1;AICO
+GUAVIARE;2016-2019;2016;2019;11;Alianza Verde;1;Alianza Verde
+GUAVIARE;2016-2019;2016;2019;11;Centro Democrático;1;Centro Democrático
+GUAVIARE;2016-2019;2016;2019;11;Liberal;1;Partido Liberal
+HUILA;2016-2019;2016;2019;12;La U;3;Partido de la U
+HUILA;2016-2019;2016;2019;12;Alianza Verde;2;Alianza Verde
+HUILA;2016-2019;2016;2019;12;Cambio Radical;2;Cambio Radical
+HUILA;2016-2019;2016;2019;12;Conservador;2;Partido Conservador
+HUILA;2016-2019;2016;2019;12;Liberal;2;Partido Liberal
+HUILA;2016-2019;2016;2019;12;Centro Democrático;1;Centro Democrático
+LA GUAJIRA;2016-2019;2016;2019;11;ASI;3;ASI (Alianza Social Independiente)
+LA GUAJIRA;2016-2019;2016;2019;11;Liberal;2;Partido Liberal
+LA GUAJIRA;2016-2019;2016;2019;11;Opción Ciudadana;2;Opción Ciudadana
+LA GUAJIRA;2016-2019;2016;2019;11;La U;2;Partido de la U
+LA GUAJIRA;2016-2019;2016;2019;11;Cambio Radical;1;Cambio Radical
+LA GUAJIRA;2016-2019;2016;2019;11;Conservador;1;Partido Conservador
+MAGDALENA;2016-2019;2016;2019;13;Cambio Radical;4;Cambio Radical
+MAGDALENA;2016-2019;2016;2019;13;La U;2;Partido de la U
+MAGDALENA;2016-2019;2016;2019;13;Liberal;2;Partido Liberal
+MAGDALENA;2016-2019;2016;2019;13;Opción Ciudadana;2;Opción Ciudadana
+MAGDALENA;2016-2019;2016;2019;13;Alianza Verde;1;Alianza Verde
+MAGDALENA;2016-2019;2016;2019;13;Conservador;1;Partido Conservador
+MAGDALENA;2016-2019;2016;2019;13;Polo Democrático;1;Polo Democrático Alternativo
+META;2016-2019;2016;2019;11;Cambio Radical;2;Cambio Radical
+META;2016-2019;2016;2019;11;Centro Democrático;2;Centro Democrático
+META;2016-2019;2016;2019;11;Liberal;2;Partido Liberal
+META;2016-2019;2016;2019;11;La U;2;Partido de la U
+META;2016-2019;2016;2019;11;Conservador;1;Partido Conservador
+META;2016-2019;2016;2019;11;Alianza Verde;1;Alianza Verde
+META;2016-2019;2016;2019;11;ASI;1;ASI (Alianza Social Independiente)
+NARIÑO;2016-2019;2016;2019;14;Liberal;4;Partido Liberal
+NARIÑO;2016-2019;2016;2019;14;Conservador;3;Partido Conservador
+NARIÑO;2016-2019;2016;2019;14;La U;3;Partido de la U
+NARIÑO;2016-2019;2016;2019;14;AICO;1;AICO
+NARIÑO;2016-2019;2016;2019;14;Alianza Verde;1;Alianza Verde
+NARIÑO;2016-2019;2016;2019;14;ASI;1;ASI (Alianza Social Independiente)
+NARIÑO;2016-2019;2016;2019;14;Cambio Radical;1;Cambio Radical
+NORTE DE SANTANDER;2016-2019;2016;2019;13;La U;4;Partido de la U
+NORTE DE SANTANDER;2016-2019;2016;2019;13;Conservador;3;Partido Conservador
+NORTE DE SANTANDER;2016-2019;2016;2019;13;Liberal;2;Partido Liberal
+NORTE DE SANTANDER;2016-2019;2016;2019;13;Alianza Verde;1;Alianza Verde
+NORTE DE SANTANDER;2016-2019;2016;2019;13;Cambio Radical;1;Cambio Radical
+NORTE DE SANTANDER;2016-2019;2016;2019;13;Centro Democrático;1;Centro Democrático
+NORTE DE SANTANDER;2016-2019;2016;2019;13;Opción Ciudadana;1;Opción Ciudadana
+PUTUMAYO;2016-2019;2016;2019;11;Liberal;3;Partido Liberal
+PUTUMAYO;2016-2019;2016;2019;11;Alianza Verde;2;Alianza Verde
+PUTUMAYO;2016-2019;2016;2019;11;Conservador;2;Partido Conservador
+PUTUMAYO;2016-2019;2016;2019;11;ASI;1;ASI (Alianza Social Independiente)
+PUTUMAYO;2016-2019;2016;2019;11;La U;1;Partido de la U
+PUTUMAYO;2016-2019;2016;2019;11;MIRA;1;MIRA
+PUTUMAYO;2016-2019;2016;2019;11;Polo Democrático;1;Polo Democrático Alternativo
+QUINDÍO;2016-2019;2016;2019;11;Cambio Radical;3;Cambio Radical
+QUINDÍO;2016-2019;2016;2019;11;Liberal;3;Partido Liberal
+QUINDÍO;2016-2019;2016;2019;11;La U;2;Partido de la U
+QUINDÍO;2016-2019;2016;2019;11;Centro Democrático;1;Centro Democrático
+QUINDÍO;2016-2019;2016;2019;11;Conservador;1;Partido Conservador
+QUINDÍO;2016-2019;2016;2019;11;MIRA;1;MIRA
+RISARALDA;2016-2019;2016;2019;12;Liberal;3;Partido Liberal
+RISARALDA;2016-2019;2016;2019;12;La U;3;Partido de la U
+RISARALDA;2016-2019;2016;2019;12;Cambio Radical;2;Cambio Radical
+RISARALDA;2016-2019;2016;2019;12;Conservador;2;Partido Conservador
+RISARALDA;2016-2019;2016;2019;12;Centro Democrático;1;Centro Democrático
+RISARALDA;2016-2019;2016;2019;12;MIRA;1;MIRA
+SAN ANDRÉS Y PROVIDENCIA;2016-2019;2016;2019;11;Liberal;3;Partido Liberal
+SAN ANDRÉS Y PROVIDENCIA;2016-2019;2016;2019;11;Cambio Radical;2;Cambio Radical
+SAN ANDRÉS Y PROVIDENCIA;2016-2019;2016;2019;11;La U;2;Partido de la U
+SAN ANDRÉS Y PROVIDENCIA;2016-2019;2016;2019;11;MIRA;2;MIRA
+SAN ANDRÉS Y PROVIDENCIA;2016-2019;2016;2019;11;Alianza Verde;1;Alianza Verde
+SAN ANDRÉS Y PROVIDENCIA;2016-2019;2016;2019;11;Opción Ciudadana;1;Opción Ciudadana
+SANTANDER;2016-2019;2016;2019;16;Centro Democrático;3;Centro Democrático
+SANTANDER;2016-2019;2016;2019;16;La U;3;Partido de la U
+SANTANDER;2016-2019;2016;2019;16;Cambio Radical;2;Cambio Radical
+SANTANDER;2016-2019;2016;2019;16;Conservador;2;Partido Conservador
+SANTANDER;2016-2019;2016;2019;16;Liberal;2;Partido Liberal
+SANTANDER;2016-2019;2016;2019;16;Opción Ciudadana;2;Opción Ciudadana
+SANTANDER;2016-2019;2016;2019;16;Alianza Verde;1;Alianza Verde
+SANTANDER;2016-2019;2016;2019;16;Polo Democrático;1;Polo Democrático Alternativo
+SUCRE;2016-2019;2016;2019;11;Liberal;3;Partido Liberal
+SUCRE;2016-2019;2016;2019;11;Cambio Radical;2;Cambio Radical
+SUCRE;2016-2019;2016;2019;11;Conservador;2;Partido Conservador
+SUCRE;2016-2019;2016;2019;11;La U;2;Partido de la U
+SUCRE;2016-2019;2016;2019;11;Opción Ciudadana;2;Opción Ciudadana
+TOLIMA;2016-2019;2016;2019;15;Liberal;4;Partido Liberal
+TOLIMA;2016-2019;2016;2019;15;Conservador;3;Partido Conservador
+TOLIMA;2016-2019;2016;2019;15;La U;3;Partido de la U
+TOLIMA;2016-2019;2016;2019;15;Cambio Radical;2;Cambio Radical
+TOLIMA;2016-2019;2016;2019;15;Alianza Verde;1;Alianza Verde
+TOLIMA;2016-2019;2016;2019;15;Centro Democrático;1;Centro Democrático
+TOLIMA;2016-2019;2016;2019;15;MIRA;1;MIRA
+VALLE DEL CAUCA;2016-2019;2016;2019;21;La U;5;Partido de la U
+VALLE DEL CAUCA;2016-2019;2016;2019;21;Liberal;5;Partido Liberal
+VALLE DEL CAUCA;2016-2019;2016;2019;21;Conservador;4;Partido Conservador
+VALLE DEL CAUCA;2016-2019;2016;2019;21;Cambio Radical;2;Cambio Radical
+VALLE DEL CAUCA;2016-2019;2016;2019;21;Centro Democrático;2;Centro Democrático
+VALLE DEL CAUCA;2016-2019;2016;2019;21;Alianza Verde;1;Alianza Verde
+VALLE DEL CAUCA;2016-2019;2016;2019;21;MIRA;1;MIRA
+VALLE DEL CAUCA;2016-2019;2016;2019;21;Polo Democrático;1;Polo Democrático Alternativo
+VAUPÉS;2016-2019;2016;2019;11;Liberal;3;Partido Liberal
+VAUPÉS;2016-2019;2016;2019;11;Cambio Radical;2;Cambio Radical
+VAUPÉS;2016-2019;2016;2019;11;Opción Ciudadana;2;Opción Ciudadana
+VAUPÉS;2016-2019;2016;2019;11;Alianza Verde;1;Alianza Verde
+VAUPÉS;2016-2019;2016;2019;11;ASI;1;ASI (Alianza Social Independiente)
+VAUPÉS;2016-2019;2016;2019;11;Conservador;1;Partido Conservador
+VAUPÉS;2016-2019;2016;2019;11;La U;1;Partido de la U
+VICHADA;2016-2019;2016;2019;11;La U;3;Partido de la U
+VICHADA;2016-2019;2016;2019;11;ASI;2;ASI (Alianza Social Independiente)
+VICHADA;2016-2019;2016;2019;11;Liberal;2;Partido Liberal
+VICHADA;2016-2019;2016;2019;11;AICO;1;AICO
+VICHADA;2016-2019;2016;2019;11;Cambio Radical;1;Cambio Radical
+VICHADA;2016-2019;2016;2019;11;Centro Democrático;1;Centro Democrático
+VICHADA;2016-2019;2016;2019;11;MAIS;1;MAIS
+AMAZONAS;2020-2023;2020;2023;11;MAIS;2;MAIS
+AMAZONAS;2020-2023;2020;2023;11;PL;2;Partido Liberal
+AMAZONAS;2020-2023;2020;2023;11;ASI;1;ASI (Alianza Social Independiente)
+AMAZONAS;2020-2023;2020;2023;11;AV;1;Alianza Verde
+AMAZONAS;2020-2023;2020;2023;11;CD;1;Centro Democrático
+AMAZONAS;2020-2023;2020;2023;11;CR;1;Cambio Radical
+AMAZONAS;2020-2023;2020;2023;11;PC;1;Partido Conservador
+AMAZONAS;2020-2023;2020;2023;11;PDA;1;Polo Democrático Alternativo
+AMAZONAS;2020-2023;2020;2023;11;PU;1;Partido de la U
+ANTIOQUIA;2020-2023;2020;2023;26;CD;8;Centro Democrático
+ANTIOQUIA;2020-2023;2020;2023;26;PL;5;Partido Liberal
+ANTIOQUIA;2020-2023;2020;2023;26;PC;4;Partido Conservador
+ANTIOQUIA;2020-2023;2020;2023;26;AV;3;Alianza Verde
+ANTIOQUIA;2020-2023;2020;2023;26;CR-MIRA;2;Otros / coaliciones / movimientos regionales
+ANTIOQUIA;2020-2023;2020;2023;26;PU;2;Partido de la U
+ANTIOQUIA;2020-2023;2020;2023;26;ASI;1;ASI (Alianza Social Independiente)
+ANTIOQUIA;2020-2023;2020;2023;26;Queremos;1;Otros / coaliciones / movimientos regionales
+ARAUCA;2020-2023;2020;2023;11;PL;4;Partido Liberal
+ARAUCA;2020-2023;2020;2023;11;CR;2;Cambio Radical
+ARAUCA;2020-2023;2020;2023;11;AV;1;Alianza Verde
+ARAUCA;2020-2023;2020;2023;11;PU;1;Partido de la U
+ARAUCA;2020-2023;2020;2023;11;ASI;1;ASI (Alianza Social Independiente)
+ARAUCA;2020-2023;2020;2023;11;CD;1;Centro Democrático
+ARAUCA;2020-2023;2020;2023;11;PC;1;Partido Conservador
+ATLÁNTICO;2020-2023;2020;2023;14;CR;6;Cambio Radical
+ATLÁNTICO;2020-2023;2020;2023;14;PU;2;Partido de la U
+ATLÁNTICO;2020-2023;2020;2023;14;PC;2;Partido Conservador
+ATLÁNTICO;2020-2023;2020;2023;14;PL;2;Partido Liberal
+ATLÁNTICO;2020-2023;2020;2023;14;CD;1;Centro Democrático
+ATLÁNTICO;2020-2023;2020;2023;14;Unidos Podemos;1;Otros / coaliciones / movimientos regionales
+BOLÍVAR;2020-2023;2020;2023;14;CR;4;Cambio Radical
+BOLÍVAR;2020-2023;2020;2023;14;PL;3;Partido Liberal
+BOLÍVAR;2020-2023;2020;2023;14;PC;3;Partido Conservador
+BOLÍVAR;2020-2023;2020;2023;14;PU;2;Partido de la U
+BOLÍVAR;2020-2023;2020;2023;14;CD-MIRA;1;Otros / coaliciones / movimientos regionales
+BOLÍVAR;2020-2023;2020;2023;14;ASI;1;ASI (Alianza Social Independiente)
+BOYACÁ;2020-2023;2020;2023;16;AV;5;Alianza Verde
+BOYACÁ;2020-2023;2020;2023;16;PL;3;Partido Liberal
+BOYACÁ;2020-2023;2020;2023;16;CD;3;Centro Democrático
+BOYACÁ;2020-2023;2020;2023;16;PC;2;Partido Conservador
+BOYACÁ;2020-2023;2020;2023;16;MAIS;1;MAIS
+BOYACÁ;2020-2023;2020;2023;16;CR;1;Cambio Radical
+BOYACÁ;2020-2023;2020;2023;16;PU;1;Partido de la U
+CALDAS;2020-2023;2020;2023;14;PL;5;Partido Liberal
+CALDAS;2020-2023;2020;2023;14;CD-MIRA;3;Otros / coaliciones / movimientos regionales
+CALDAS;2020-2023;2020;2023;14;PU;3;Partido de la U
+CALDAS;2020-2023;2020;2023;14;PC;2;Partido Conservador
+CALDAS;2020-2023;2020;2023;14;AV;1;Alianza Verde
+CAQUETÁ;2020-2023;2020;2023;11;PL;3;Partido Liberal
+CAQUETÁ;2020-2023;2020;2023;11;PC;2;Partido Conservador
+CAQUETÁ;2020-2023;2020;2023;11;AV;1;Alianza Verde
+CAQUETÁ;2020-2023;2020;2023;11;CD;1;Centro Democrático
+CAQUETÁ;2020-2023;2020;2023;11;CR;1;Cambio Radical
+CAQUETÁ;2020-2023;2020;2023;11;Alternativa;1;Otros / coaliciones / movimientos regionales
+CAQUETÁ;2020-2023;2020;2023;11;ASI;1;ASI (Alianza Social Independiente)
+CAQUETÁ;2020-2023;2020;2023;11;PU;1;Partido de la U
+CASANARE;2020-2023;2020;2023;11;CR;3;Cambio Radical
+CASANARE;2020-2023;2020;2023;11;PL;2;Partido Liberal
+CASANARE;2020-2023;2020;2023;11;CD-MIRA;1;Otros / coaliciones / movimientos regionales
+CASANARE;2020-2023;2020;2023;11;PU;1;Partido de la U
+CASANARE;2020-2023;2020;2023;11;ASI;1;ASI (Alianza Social Independiente)
+CASANARE;2020-2023;2020;2023;11;Coalición Casanare;1;Otros / coaliciones / movimientos regionales
+CASANARE;2020-2023;2020;2023;11;AV;1;Alianza Verde
+CASANARE;2020-2023;2020;2023;11;Marco Tulio Juntos por Casanare;1;Otros / coaliciones / movimientos regionales
+CAUCA;2020-2023;2020;2023;13;CR;2;Cambio Radical
+CAUCA;2020-2023;2020;2023;13;PL;2;Partido Liberal
+CAUCA;2020-2023;2020;2023;13;PU;2;Partido de la U
+CAUCA;2020-2023;2020;2023;13;Coalición Cauca;2;Otros / coaliciones / movimientos regionales
+CAUCA;2020-2023;2020;2023;13;AV;2;Alianza Verde
+CAUCA;2020-2023;2020;2023;13;PC;1;Partido Conservador
+CAUCA;2020-2023;2020;2023;13;Cauca Incluyente;1;Otros / coaliciones / movimientos regionales
+CAUCA;2020-2023;2020;2023;13;CD-MIRA;1;Otros / coaliciones / movimientos regionales
+CESAR;2020-2023;2020;2023;11;PU;2;Partido de la U
+CESAR;2020-2023;2020;2023;11;CR;2;Cambio Radical
+CESAR;2020-2023;2020;2023;11;PC;2;Partido Conservador
+CESAR;2020-2023;2020;2023;11;CD;2;Centro Democrático
+CESAR;2020-2023;2020;2023;11;ASI;1;ASI (Alianza Social Independiente)
+CESAR;2020-2023;2020;2023;11;PL;1;Partido Liberal
+CESAR;2020-2023;2020;2023;11;AV;1;Alianza Verde
+CHOCÓ;2020-2023;2020;2023;11;PL;3;Partido Liberal
+CHOCÓ;2020-2023;2020;2023;11;AV;1;Alianza Verde
+CHOCÓ;2020-2023;2020;2023;11;ADA;2;Otros / coaliciones / movimientos regionales
+CHOCÓ;2020-2023;2020;2023;11;PC;2;Partido Conservador
+CHOCÓ;2020-2023;2020;2023;11;CR;2;Cambio Radical
+CHOCÓ;2020-2023;2020;2023;11;PU;2;Partido de la U
+CHOCÓ;2020-2023;2020;2023;11;CD-MIRA;1;Otros / coaliciones / movimientos regionales
+CUNDINAMARCA;2020-2023;2020;2023;16;CR;4;Cambio Radical
+CUNDINAMARCA;2020-2023;2020;2023;16;PL;3;Partido Liberal
+CUNDINAMARCA;2020-2023;2020;2023;16;PU;3;Partido de la U
+CUNDINAMARCA;2020-2023;2020;2023;16;AV;2;Alianza Verde
+CUNDINAMARCA;2020-2023;2020;2023;16;CD;2;Centro Democrático
+CUNDINAMARCA;2020-2023;2020;2023;16;PC-MIRA;2;Otros / coaliciones / movimientos regionales
+CÓRDOBA;2020-2023;2020;2023;13;PU;4;Partido de la U
+CÓRDOBA;2020-2023;2020;2023;13;CD-CR;4;Otros / coaliciones / movimientos regionales
+CÓRDOBA;2020-2023;2020;2023;13;PL;3;Partido Liberal
+CÓRDOBA;2020-2023;2020;2023;13;PC;2;Partido Conservador
+GUAINÍA;2020-2023;2020;2023;11;CR;3;Cambio Radical
+GUAINÍA;2020-2023;2020;2023;11;PU;2;Partido de la U
+GUAINÍA;2020-2023;2020;2023;11;CD;1;Centro Democrático
+GUAINÍA;2020-2023;2020;2023;11;PL;1;Partido Liberal
+GUAINÍA;2020-2023;2020;2023;11;PDA;1;Polo Democrático Alternativo
+GUAINÍA;2020-2023;2020;2023;11;PC;1;Partido Conservador
+GUAINÍA;2020-2023;2020;2023;11;ASI;1;ASI (Alianza Social Independiente)
+GUAINÍA;2020-2023;2020;2023;11;AICO;1;AICO
+GUAVIARE;2020-2023;2020;2023;11;PU;3;Partido de la U
+GUAVIARE;2020-2023;2020;2023;11;PC;2;Partido Conservador
+GUAVIARE;2020-2023;2020;2023;11;AV;2;Alianza Verde
+GUAVIARE;2020-2023;2020;2023;11;PL;1;Partido Liberal
+GUAVIARE;2020-2023;2020;2023;11;CR;1;Cambio Radical
+GUAVIARE;2020-2023;2020;2023;11;CD-MIRA;1;Otros / coaliciones / movimientos regionales
+GUAVIARE;2020-2023;2020;2023;11;ASI;1;ASI (Alianza Social Independiente)
+HUILA;2020-2023;2020;2023;12;PC;4;Partido Conservador
+HUILA;2020-2023;2020;2023;12;PL;2;Partido Liberal
+HUILA;2020-2023;2020;2023;12;CR;2;Cambio Radical
+HUILA;2020-2023;2020;2023;12;AV;2;Alianza Verde
+HUILA;2020-2023;2020;2023;12;CD;1;Centro Democrático
+HUILA;2020-2023;2020;2023;12;PU;1;Partido de la U
+LA GUAJIRA;2020-2023;2020;2023;11;ASI;3;ASI (Alianza Social Independiente)
+LA GUAJIRA;2020-2023;2020;2023;11;PC;3;Partido Conservador
+LA GUAJIRA;2020-2023;2020;2023;11;PU;2;Partido de la U
+LA GUAJIRA;2020-2023;2020;2023;11;MAIS;1;MAIS
+LA GUAJIRA;2020-2023;2020;2023;11;Somos Guajira;1;Otros / coaliciones / movimientos regionales
+LA GUAJIRA;2020-2023;2020;2023;11;Adelante Mi Guajira;1;Otros / coaliciones / movimientos regionales
+MAGDALENA;2020-2023;2020;2023;13;CR;4;Cambio Radical
+MAGDALENA;2020-2023;2020;2023;13;CD;2;Centro Democrático
+MAGDALENA;2020-2023;2020;2023;13;AV;1;Alianza Verde
+MAGDALENA;2020-2023;2020;2023;13;Colombia Renaciente;1;Otros / coaliciones / movimientos regionales
+MAGDALENA;2020-2023;2020;2023;13;Convergencia Democrática del Magdalena;1;Otros / coaliciones / movimientos regionales
+MAGDALENA;2020-2023;2020;2023;13;PC-MIRA;1;Otros / coaliciones / movimientos regionales
+MAGDALENA;2020-2023;2020;2023;13;PL;1;Partido Liberal
+MAGDALENA;2020-2023;2020;2023;13;PU;1;Partido de la U
+MAGDALENA;2020-2023;2020;2023;13;Mello Magdalena Gana;1;Otros / coaliciones / movimientos regionales
+META;2020-2023;2020;2023;11;AV;3;Alianza Verde
+META;2020-2023;2020;2023;11;PL;2;Partido Liberal
+META;2020-2023;2020;2023;11;ASI;2;ASI (Alianza Social Independiente)
+META;2020-2023;2020;2023;11;CR;1;Cambio Radical
+META;2020-2023;2020;2023;11;PU;1;Partido de la U
+META;2020-2023;2020;2023;11;CD;1;Centro Democrático
+META;2020-2023;2020;2023;11;PC-MIRA;1;Otros / coaliciones / movimientos regionales
+NARIÑO;2020-2023;2020;2023;14;PC;4;Partido Conservador
+NARIÑO;2020-2023;2020;2023;14;CR;2;Cambio Radical
+NARIÑO;2020-2023;2020;2023;14;PL;2;Partido Liberal
+NARIÑO;2020-2023;2020;2023;14;PU;2;Partido de la U
+NARIÑO;2020-2023;2020;2023;14;Convergencia;2;Otros / coaliciones / movimientos regionales
+NARIÑO;2020-2023;2020;2023;14;AICO;1;AICO
+NARIÑO;2020-2023;2020;2023;14;Unidos Sí Podemos;1;Otros / coaliciones / movimientos regionales
+NORTE DE SANTANDER;2020-2023;2020;2023;13;PC;3;Partido Conservador
+NORTE DE SANTANDER;2020-2023;2020;2023;13;CD;3;Centro Democrático
+NORTE DE SANTANDER;2020-2023;2020;2023;13;CR;2;Cambio Radical
+NORTE DE SANTANDER;2020-2023;2020;2023;13;PU;2;Partido de la U
+NORTE DE SANTANDER;2020-2023;2020;2023;13;PL;2;Partido Liberal
+NORTE DE SANTANDER;2020-2023;2020;2023;13;AV;1;Alianza Verde
+PUTUMAYO;2020-2023;2020;2023;11;PL;2;Partido Liberal
+PUTUMAYO;2020-2023;2020;2023;11;PC;2;Partido Conservador
+PUTUMAYO;2020-2023;2020;2023;11;PU;2;Partido de la U
+PUTUMAYO;2020-2023;2020;2023;11;ASI;1;ASI (Alianza Social Independiente)
+PUTUMAYO;2020-2023;2020;2023;11;AV;1;Alianza Verde
+PUTUMAYO;2020-2023;2020;2023;11;MAIS;1;MAIS
+PUTUMAYO;2020-2023;2020;2023;11;AICO;1;AICO
+PUTUMAYO;2020-2023;2020;2023;11;CH-UP;1;Otros / coaliciones / movimientos regionales
+QUINDÍO;2020-2023;2020;2023;11;PL;3;Partido Liberal
+QUINDÍO;2020-2023;2020;2023;11;PU;2;Partido de la U
+QUINDÍO;2020-2023;2020;2023;11;CD-PC;2;Otros / coaliciones / movimientos regionales
+QUINDÍO;2020-2023;2020;2023;11;MIRA;2;MIRA
+QUINDÍO;2020-2023;2020;2023;11;Quindío Diferente;1;Otros / coaliciones / movimientos regionales
+QUINDÍO;2020-2023;2020;2023;11;Por Todos;1;Otros / coaliciones / movimientos regionales
+RISARALDA;2020-2023;2020;2023;12;PC;4;Partido Conservador
+RISARALDA;2020-2023;2020;2023;12;PL;3;Partido Liberal
+RISARALDA;2020-2023;2020;2023;12;CD;1;Centro Democrático
+RISARALDA;2020-2023;2020;2023;12;MIRA;1;MIRA
+RISARALDA;2020-2023;2020;2023;12;Alternativos;1;Otros / coaliciones / movimientos regionales
+RISARALDA;2020-2023;2020;2023;12;PU;1;Partido de la U
+RISARALDA;2020-2023;2020;2023;12;CR;1;Cambio Radical
+SAN ANDRÉS Y PROVIDENCIA;2020-2023;2020;2023;11;PL;3;Partido Liberal
+SAN ANDRÉS Y PROVIDENCIA;2020-2023;2020;2023;11;CR;2;Cambio Radical
+SAN ANDRÉS Y PROVIDENCIA;2020-2023;2020;2023;11;Movimiento Amplio por el Progreso del Archipiélago;2;Otros / coaliciones / movimientos regionales
+SAN ANDRÉS Y PROVIDENCIA;2020-2023;2020;2023;11;CD-MIRA;1;Otros / coaliciones / movimientos regionales
+SAN ANDRÉS Y PROVIDENCIA;2020-2023;2020;2023;11;PC;1;Partido Conservador
+SAN ANDRÉS Y PROVIDENCIA;2020-2023;2020;2023;11;Movimiento de Integración Regional;1;Otros / coaliciones / movimientos regionales
+SAN ANDRÉS Y PROVIDENCIA;2020-2023;2020;2023;11;PU;1;Partido de la U
+SANTANDER;2020-2023;2020;2023;16;AV;2;Alianza Verde
+SANTANDER;2020-2023;2020;2023;16;CR;2;Cambio Radical
+SANTANDER;2020-2023;2020;2023;16;CD-MIRA;2;Otros / coaliciones / movimientos regionales
+SANTANDER;2020-2023;2020;2023;16;LIGA;2;Otros / coaliciones / movimientos regionales
+SANTANDER;2020-2023;2020;2023;16;PC;2;Partido Conservador
+SANTANDER;2020-2023;2020;2023;16;PL;2;Partido Liberal
+SANTANDER;2020-2023;2020;2023;16;Unidad Alternativa;2;Otros / coaliciones / movimientos regionales
+SANTANDER;2020-2023;2020;2023;16;ASI;1;ASI (Alianza Social Independiente)
+SANTANDER;2020-2023;2020;2023;16;PU;1;Partido de la U
+SUCRE;2020-2023;2020;2023;11;PL;4;Partido Liberal
+SUCRE;2020-2023;2020;2023;11;PC;3;Partido Conservador
+SUCRE;2020-2023;2020;2023;11;CR;2;Cambio Radical
+SUCRE;2020-2023;2020;2023;11;CD-MIRA;1;Otros / coaliciones / movimientos regionales
+SUCRE;2020-2023;2020;2023;11;Cien por Ciento por Sucre;1;Otros / coaliciones / movimientos regionales
+TOLIMA;2020-2023;2020;2023;15;PC;4;Partido Conservador
+TOLIMA;2020-2023;2020;2023;15;CR;3;Cambio Radical
+TOLIMA;2020-2023;2020;2023;15;CD;2;Centro Democrático
+TOLIMA;2020-2023;2020;2023;15;PL;2;Partido Liberal
+TOLIMA;2020-2023;2020;2023;15;PU;1;Partido de la U
+TOLIMA;2020-2023;2020;2023;15;Alternativa;1;Otros / coaliciones / movimientos regionales
+TOLIMA;2020-2023;2020;2023;15;MIRA;1;MIRA
+TOLIMA;2020-2023;2020;2023;15;Decentes;1;Otros / coaliciones / movimientos regionales
+VALLE DEL CAUCA;2020-2023;2020;2023;21;PU;6;Partido de la U
+VALLE DEL CAUCA;2020-2023;2020;2023;21;PL;4;Partido Liberal
+VALLE DEL CAUCA;2020-2023;2020;2023;21;PC;3;Partido Conservador
+VALLE DEL CAUCA;2020-2023;2020;2023;21;AV;2;Alianza Verde
+VALLE DEL CAUCA;2020-2023;2020;2023;21;CR;1;Cambio Radical
+VALLE DEL CAUCA;2020-2023;2020;2023;21;CD;1;Centro Democrático
+VALLE DEL CAUCA;2020-2023;2020;2023;21;Colombia Renaciente;1;Otros / coaliciones / movimientos regionales
+VALLE DEL CAUCA;2020-2023;2020;2023;21;CJL;1;Otros / coaliciones / movimientos regionales
+VALLE DEL CAUCA;2020-2023;2020;2023;21;MIRA;1;MIRA
+VALLE DEL CAUCA;2020-2023;2020;2023;21;El Valle es de su Gente;1;Otros / coaliciones / movimientos regionales
+VAUPÉS;2020-2023;2020;2023;11;PU;3;Partido de la U
+VAUPÉS;2020-2023;2020;2023;11;PL;2;Partido Liberal
+VAUPÉS;2020-2023;2020;2023;11;CR;2;Cambio Radical
+VAUPÉS;2020-2023;2020;2023;11;ASI;1;ASI (Alianza Social Independiente)
+VAUPÉS;2020-2023;2020;2023;11;AV;1;Alianza Verde
+VAUPÉS;2020-2023;2020;2023;11;CD;1;Centro Democrático
+VAUPÉS;2020-2023;2020;2023;11;PC;1;Partido Conservador
+VICHADA;2020-2023;2020;2023;11;CR;2;Cambio Radical
+VICHADA;2020-2023;2020;2023;11;CD;2;Centro Democrático
+VICHADA;2020-2023;2020;2023;11;ASI;2;ASI (Alianza Social Independiente)
+VICHADA;2020-2023;2020;2023;11;MAIS;1;MAIS
+VICHADA;2020-2023;2020;2023;11;PU;1;Partido de la U
+VICHADA;2020-2023;2020;2023;11;PL;1;Partido Liberal
+VICHADA;2020-2023;2020;2023;11;AICO;1;AICO
+VICHADA;2020-2023;2020;2023;11;AV;1;Alianza Verde
+AMAZONAS;2024-2027;2024;2027;11;U;3;Partido de la U
+AMAZONAS;2024-2027;2024;2027;11;MAIS;2;MAIS
+AMAZONAS;2024-2027;2024;2027;11;PL;2;Partido Liberal
+AMAZONAS;2024-2027;2024;2027;11;COLR;1;Otros / coaliciones / movimientos regionales
+AMAZONAS;2024-2027;2024;2027;11;CD;1;Centro Democrático
+AMAZONAS;2024-2027;2024;2027;11;AV;1;Alianza Verde
+AMAZONAS;2024-2027;2024;2027;11;LF;1;Otros / coaliciones / movimientos regionales
+ANTIOQUIA;2024-2027;2024;2027;26;CD;6;Centro Democrático
+ANTIOQUIA;2024-2027;2024;2027;26;CRE;5;Otros / coaliciones / movimientos regionales
+ANTIOQUIA;2024-2027;2024;2027;26;PC;4;Partido Conservador
+ANTIOQUIA;2024-2027;2024;2027;26;PL;3;Partido Liberal
+ANTIOQUIA;2024-2027;2024;2027;26;AV;3;Alianza Verde
+ANTIOQUIA;2024-2027;2024;2027;26;PH;1;Pacto Histórico
+ANTIOQUIA;2024-2027;2024;2027;26;Juntos;1;Otros / coaliciones / movimientos regionales
+ANTIOQUIA;2024-2027;2024;2027;26;ASI;1;ASI (Alianza Social Independiente)
+ANTIOQUIA;2024-2027;2024;2027;26;Renace;1;Otros / coaliciones / movimientos regionales
+ANTIOQUIA;2024-2027;2024;2027;26;IN;1;Otros / coaliciones / movimientos regionales
+ARAUCA;2024-2027;2024;2027;11;PL;4;Partido Liberal
+ARAUCA;2024-2027;2024;2027;11;AV;2;Alianza Verde
+ARAUCA;2024-2027;2024;2027;11;CR;2;Cambio Radical
+ARAUCA;2024-2027;2024;2027;11;U;1;Partido de la U
+ARAUCA;2024-2027;2024;2027;11;CD;1;Centro Democrático
+ARAUCA;2024-2027;2024;2027;11;ASI;1;ASI (Alianza Social Independiente)
+ATLÁNTICO;2024-2027;2024;2027;14;CR;4;Cambio Radical
+ATLÁNTICO;2024-2027;2024;2027;14;PL;4;Partido Liberal
+ATLÁNTICO;2024-2027;2024;2027;14;PC;2;Partido Conservador
+ATLÁNTICO;2024-2027;2024;2027;14;CD;1;Centro Democrático
+ATLÁNTICO;2024-2027;2024;2027;14;U;1;Partido de la U
+ATLÁNTICO;2024-2027;2024;2027;14;PH;1;Pacto Histórico
+ATLÁNTICO;2024-2027;2024;2027;14;Avanza;1;Otros / coaliciones / movimientos regionales
+BOLÍVAR;2024-2027;2024;2027;14;PC;5;Partido Conservador
+BOLÍVAR;2024-2027;2024;2027;14;CR;3;Cambio Radical
+BOLÍVAR;2024-2027;2024;2027;14;PL;2;Partido Liberal
+BOLÍVAR;2024-2027;2024;2027;14;ASI;1;ASI (Alianza Social Independiente)
+BOLÍVAR;2024-2027;2024;2027;14;U;1;Partido de la U
+BOLÍVAR;2024-2027;2024;2027;14;AV;1;Alianza Verde
+BOLÍVAR;2024-2027;2024;2027;14;MSN;1;Otros / coaliciones / movimientos regionales
+BOYACÁ;2024-2027;2024;2027;16;AV;4;Alianza Verde
+BOYACÁ;2024-2027;2024;2027;16;PL;4;Partido Liberal
+BOYACÁ;2024-2027;2024;2027;16;PC-ASI;2;Otros / coaliciones / movimientos regionales
+BOYACÁ;2024-2027;2024;2027;16;U-MIRA-EM;2;Otros / coaliciones / movimientos regionales
+BOYACÁ;2024-2027;2024;2027;16;CR;2;Cambio Radical
+BOYACÁ;2024-2027;2024;2027;16;CD;1;Centro Democrático
+BOYACÁ;2024-2027;2024;2027;16;PH;1;Pacto Histórico
+CALDAS;2024-2027;2024;2027;14;PC;4;Partido Conservador
+CALDAS;2024-2027;2024;2027;14;Asamblea de Caldas;3;Otros / coaliciones / movimientos regionales
+CALDAS;2024-2027;2024;2027;14;PL;3;Partido Liberal
+CALDAS;2024-2027;2024;2027;14;Centro Derecha;1;Otros / coaliciones / movimientos regionales
+CALDAS;2024-2027;2024;2027;14;Juntos por Caldas;1;Otros / coaliciones / movimientos regionales
+CALDAS;2024-2027;2024;2027;14;AV;1;Alianza Verde
+CALDAS;2024-2027;2024;2027;14;U;1;Partido de la U
+CAQUETÁ;2024-2027;2024;2027;11;PC;3;Partido Conservador
+CAQUETÁ;2024-2027;2024;2027;11;PL;3;Partido Liberal
+CAQUETÁ;2024-2027;2024;2027;11;AV;2;Alianza Verde
+CAQUETÁ;2024-2027;2024;2027;11;ASI;1;ASI (Alianza Social Independiente)
+CAQUETÁ;2024-2027;2024;2027;11;U;1;Partido de la U
+CAQUETÁ;2024-2027;2024;2027;11;CR;1;Cambio Radical
+CASANARE;2024-2027;2024;2027;11;CD;3;Centro Democrático
+CASANARE;2024-2027;2024;2027;11;Por Casanare;2;Otros / coaliciones / movimientos regionales
+CASANARE;2024-2027;2024;2027;11;PL;2;Partido Liberal
+CASANARE;2024-2027;2024;2027;11;U;1;Partido de la U
+CASANARE;2024-2027;2024;2027;11;ASI;1;ASI (Alianza Social Independiente)
+CASANARE;2024-2027;2024;2027;11;NL;1;Otros / coaliciones / movimientos regionales
+CASANARE;2024-2027;2024;2027;11;COLR;1;Otros / coaliciones / movimientos regionales
+CAUCA;2024-2027;2024;2027;13;PH;3;Pacto Histórico
+CAUCA;2024-2027;2024;2027;13;PL;3;Partido Liberal
+CAUCA;2024-2027;2024;2027;13;AV;2;Alianza Verde
+CAUCA;2024-2027;2024;2027;13;MAIS;2;MAIS
+CAUCA;2024-2027;2024;2027;13;CR;1;Cambio Radical
+CAUCA;2024-2027;2024;2027;13;COLR-MIRA;1;Otros / coaliciones / movimientos regionales
+CAUCA;2024-2027;2024;2027;13;Independientes con Unidad;1;Otros / coaliciones / movimientos regionales
+CESAR;2024-2027;2024;2027;11;U;2;Partido de la U
+CESAR;2024-2027;2024;2027;11;PL;2;Partido Liberal
+CESAR;2024-2027;2024;2027;11;CR;2;Cambio Radical
+CESAR;2024-2027;2024;2027;11;PC;2;Partido Conservador
+CESAR;2024-2027;2024;2027;11;ASI;1;ASI (Alianza Social Independiente)
+CESAR;2024-2027;2024;2027;11;AV-MIRA-EM;1;Otros / coaliciones / movimientos regionales
+CESAR;2024-2027;2024;2027;11;CD;1;Centro Democrático
+CHOCÓ;2024-2027;2024;2027;11;PL;2;Partido Liberal
+CHOCÓ;2024-2027;2024;2027;11;PC;2;Partido Conservador
+CHOCÓ;2024-2027;2024;2027;11;CR;2;Cambio Radical
+CHOCÓ;2024-2027;2024;2027;11;U-MIRA;2;Otros / coaliciones / movimientos regionales
+CHOCÓ;2024-2027;2024;2027;11;AV;1;Alianza Verde
+CHOCÓ;2024-2027;2024;2027;11;Nuestro Compromiso es por el Chocó;1;Otros / coaliciones / movimientos regionales
+CHOCÓ;2024-2027;2024;2027;11;LF;1;Otros / coaliciones / movimientos regionales
+CUNDINAMARCA;2024-2027;2024;2027;16;CR;3;Cambio Radical
+CUNDINAMARCA;2024-2027;2024;2027;16;PL-MAIS;3;Otros / coaliciones / movimientos regionales
+CUNDINAMARCA;2024-2027;2024;2027;16;DEM-CJL;2;Otros / coaliciones / movimientos regionales
+CUNDINAMARCA;2024-2027;2024;2027;16;PC;2;Partido Conservador
+CUNDINAMARCA;2024-2027;2024;2027;16;Asamblea de Cundinamarca;2;Otros / coaliciones / movimientos regionales
+CUNDINAMARCA;2024-2027;2024;2027;16;CD-MSN;2;Otros / coaliciones / movimientos regionales
+CUNDINAMARCA;2024-2027;2024;2027;16;PH;1;Pacto Histórico
+CUNDINAMARCA;2024-2027;2024;2027;16;AV;1;Alianza Verde
+CÓRDOBA;2024-2027;2024;2027;13;U;3;Partido de la U
+CÓRDOBA;2024-2027;2024;2027;13;PL;3;Partido Liberal
+CÓRDOBA;2024-2027;2024;2027;13;Córdoba Florece;2;Otros / coaliciones / movimientos regionales
+CÓRDOBA;2024-2027;2024;2027;13;PC;2;Partido Conservador
+CÓRDOBA;2024-2027;2024;2027;13;NL;1;Otros / coaliciones / movimientos regionales
+CÓRDOBA;2024-2027;2024;2027;13;Alianza por Córdoba;1;Otros / coaliciones / movimientos regionales
+GUAINÍA;2024-2027;2024;2027;11;PL;2;Partido Liberal
+GUAINÍA;2024-2027;2024;2027;11;AICO;2;AICO
+GUAINÍA;2024-2027;2024;2027;11;COLR;2;Otros / coaliciones / movimientos regionales
+GUAINÍA;2024-2027;2024;2027;11;CR;1;Cambio Radical
+GUAINÍA;2024-2027;2024;2027;11;ASI;1;ASI (Alianza Social Independiente)
+GUAINÍA;2024-2027;2024;2027;11;LF;1;Otros / coaliciones / movimientos regionales
+GUAINÍA;2024-2027;2024;2027;11;PC;1;Partido Conservador
+GUAINÍA;2024-2027;2024;2027;11;U;1;Partido de la U
+GUAVIARE;2024-2027;2024;2027;11;PC;4;Partido Conservador
+GUAVIARE;2024-2027;2024;2027;11;AV;2;Alianza Verde
+GUAVIARE;2024-2027;2024;2027;11;PL;1;Partido Liberal
+GUAVIARE;2024-2027;2024;2027;11;CR;1;Cambio Radical
+GUAVIARE;2024-2027;2024;2027;11;ASI;1;ASI (Alianza Social Independiente)
+GUAVIARE;2024-2027;2024;2027;11;CD-MIRA;1;Otros / coaliciones / movimientos regionales
+GUAVIARE;2024-2027;2024;2027;11;U;1;Partido de la U
+HUILA;2024-2027;2024;2027;12;PL;3;Partido Liberal
+HUILA;2024-2027;2024;2027;12;AV;2;Alianza Verde
+HUILA;2024-2027;2024;2027;12;PC;2;Partido Conservador
+HUILA;2024-2027;2024;2027;12;Huila Emprende;2;Otros / coaliciones / movimientos regionales
+HUILA;2024-2027;2024;2027;12;PH;1;Pacto Histórico
+HUILA;2024-2027;2024;2027;12;U-MIRA;1;Otros / coaliciones / movimientos regionales
+HUILA;2024-2027;2024;2027;12;CRE;1;Otros / coaliciones / movimientos regionales
+LA GUAJIRA;2024-2027;2024;2027;11;U;4;Partido de la U
+LA GUAJIRA;2024-2027;2024;2027;11;PC;3;Partido Conservador
+LA GUAJIRA;2024-2027;2024;2027;11;ASI;1;ASI (Alianza Social Independiente)
+LA GUAJIRA;2024-2027;2024;2027;11;MAIS;1;MAIS
+LA GUAJIRA;2024-2027;2024;2027;11;PH;1;Pacto Histórico
+LA GUAJIRA;2024-2027;2024;2027;11;AV-PVO;1;Otros / coaliciones / movimientos regionales
+MAGDALENA;2024-2027;2024;2027;13;Magdalena Grande;3;Otros / coaliciones / movimientos regionales
+MAGDALENA;2024-2027;2024;2027;13;FC;2;Otros / coaliciones / movimientos regionales
+MAGDALENA;2024-2027;2024;2027;13;U;2;Partido de la U
+MAGDALENA;2024-2027;2024;2027;13;COLR-NL;2;Otros / coaliciones / movimientos regionales
+MAGDALENA;2024-2027;2024;2027;13;AV;1;Alianza Verde
+MAGDALENA;2024-2027;2024;2027;13;CR;1;Cambio Radical
+MAGDALENA;2024-2027;2024;2027;13;PL-MIRA;1;Otros / coaliciones / movimientos regionales
+MAGDALENA;2024-2027;2024;2027;13;G.S.C. Magdalena Tiene Futuro;1;Otros / coaliciones / movimientos regionales
+META;2024-2027;2024;2027;11;CD;3;Centro Democrático
+META;2024-2027;2024;2027;11;CR;2;Cambio Radical
+META;2024-2027;2024;2027;11;Llaneros por el Meta;2;Otros / coaliciones / movimientos regionales
+META;2024-2027;2024;2027;11;AV;1;Alianza Verde
+META;2024-2027;2024;2027;11;ASI-MIRA;1;Otros / coaliciones / movimientos regionales
+META;2024-2027;2024;2027;11;U;1;Partido de la U
+NARIÑO;2024-2027;2024;2027;14;PL;3;Partido Liberal
+NARIÑO;2024-2027;2024;2027;14;PC;3;Partido Conservador
+NARIÑO;2024-2027;2024;2027;14;CR;2;Cambio Radical
+NARIÑO;2024-2027;2024;2027;14;U-MIRA-LF;2;Otros / coaliciones / movimientos regionales
+NARIÑO;2024-2027;2024;2027;14;PH;1;Pacto Histórico
+NARIÑO;2024-2027;2024;2027;14;AICO;1;AICO
+NARIÑO;2024-2027;2024;2027;14;ADA;1;Otros / coaliciones / movimientos regionales
+NARIÑO;2024-2027;2024;2027;14;Alianza por Nariño;1;Otros / coaliciones / movimientos regionales
+NORTE DE SANTANDER;2024-2027;2024;2027;13;PL;4;Partido Liberal
+NORTE DE SANTANDER;2024-2027;2024;2027;13;CR-MIRA;2;Otros / coaliciones / movimientos regionales
+NORTE DE SANTANDER;2024-2027;2024;2027;13;PC;2;Partido Conservador
+NORTE DE SANTANDER;2024-2027;2024;2027;13;U;2;Partido de la U
+NORTE DE SANTANDER;2024-2027;2024;2027;13;AV;1;Alianza Verde
+NORTE DE SANTANDER;2024-2027;2024;2027;13;CD;1;Centro Democrático
+PUTUMAYO;2024-2027;2024;2027;11;PL;3;Partido Liberal
+PUTUMAYO;2024-2027;2024;2027;11;ASI;2;ASI (Alianza Social Independiente)
+PUTUMAYO;2024-2027;2024;2027;11;AV;1;Alianza Verde
+PUTUMAYO;2024-2027;2024;2027;11;MAIS;1;MAIS
+PUTUMAYO;2024-2027;2024;2027;11;Putumayo en Marcha;1;Otros / coaliciones / movimientos regionales
+PUTUMAYO;2024-2027;2024;2027;11;Gente en Movimiento;1;Otros / coaliciones / movimientos regionales
+PUTUMAYO;2024-2027;2024;2027;11;AICO;1;AICO
+PUTUMAYO;2024-2027;2024;2027;11;PC;1;Partido Conservador
+QUINDÍO;2024-2027;2024;2027;11;CR-MIRA;4;Otros / coaliciones / movimientos regionales
+QUINDÍO;2024-2027;2024;2027;11;PL;2;Partido Liberal
+QUINDÍO;2024-2027;2024;2027;11;PC-CD;2;Otros / coaliciones / movimientos regionales
+QUINDÍO;2024-2027;2024;2027;11;U;2;Partido de la U
+QUINDÍO;2024-2027;2024;2027;11;PH;1;Pacto Histórico
+RISARALDA;2024-2027;2024;2027;12;PL;4;Partido Liberal
+RISARALDA;2024-2027;2024;2027;12;U-MIRA;3;Otros / coaliciones / movimientos regionales
+RISARALDA;2024-2027;2024;2027;12;PC;2;Partido Conservador
+RISARALDA;2024-2027;2024;2027;12;CD;1;Centro Democrático
+RISARALDA;2024-2027;2024;2027;12;Alternativos;1;Otros / coaliciones / movimientos regionales
+RISARALDA;2024-2027;2024;2027;12;CR;1;Cambio Radical
+SAN ANDRÉS Y PROVIDENCIA;2024-2027;2024;2027;11;PL;5;Partido Liberal
+SAN ANDRÉS Y PROVIDENCIA;2024-2027;2024;2027;11;G.S.C. Movimiento Progreso;3;Otros / coaliciones / movimientos regionales
+SAN ANDRÉS Y PROVIDENCIA;2024-2027;2024;2027;11;CR;1;Cambio Radical
+SAN ANDRÉS Y PROVIDENCIA;2024-2027;2024;2027;11;CD-MIRA;1;Otros / coaliciones / movimientos regionales
+SAN ANDRÉS Y PROVIDENCIA;2024-2027;2024;2027;11;PC-NL-CJL;1;Otros / coaliciones / movimientos regionales
+SANTANDER;2024-2027;2024;2027;16;CD;3;Centro Democrático
+SANTANDER;2024-2027;2024;2027;16;PL;2;Partido Liberal
+SANTANDER;2024-2027;2024;2027;16;CR;2;Cambio Radical
+SANTANDER;2024-2027;2024;2027;16;AV;2;Alianza Verde
+SANTANDER;2024-2027;2024;2027;16;PC-MIRA;2;Otros / coaliciones / movimientos regionales
+SANTANDER;2024-2027;2024;2027;16;ASI-GEM;1;Otros / coaliciones / movimientos regionales
+SANTANDER;2024-2027;2024;2027;16;U-LF;1;Otros / coaliciones / movimientos regionales
+SANTANDER;2024-2027;2024;2027;16;PH;1;Pacto Histórico
+SANTANDER;2024-2027;2024;2027;16;Sumemos;1;Otros / coaliciones / movimientos regionales
+SANTANDER;2024-2027;2024;2027;16;NL;1;Otros / coaliciones / movimientos regionales
+SUCRE;2024-2027;2024;2027;11;PL;5;Partido Liberal
+SUCRE;2024-2027;2024;2027;11;PC;3;Partido Conservador
+SUCRE;2024-2027;2024;2027;11;U-MIRA;1;Otros / coaliciones / movimientos regionales
+SUCRE;2024-2027;2024;2027;11;CD-CJL;1;Otros / coaliciones / movimientos regionales
+SUCRE;2024-2027;2024;2027;11;EM;1;Otros / coaliciones / movimientos regionales
+TOLIMA;2024-2027;2024;2027;15;PC;6;Partido Conservador
+TOLIMA;2024-2027;2024;2027;15;CD;2;Centro Democrático
+TOLIMA;2024-2027;2024;2027;15;PL;2;Partido Liberal
+TOLIMA;2024-2027;2024;2027;15;U-NL;2;Otros / coaliciones / movimientos regionales
+TOLIMA;2024-2027;2024;2027;15;CR-ADA;1;Otros / coaliciones / movimientos regionales
+TOLIMA;2024-2027;2024;2027;15;PH;1;Pacto Histórico
+TOLIMA;2024-2027;2024;2027;15;MIRA;1;MIRA
+VALLE DEL CAUCA;2024-2027;2024;2027;21;U;5;Partido de la U
+VALLE DEL CAUCA;2024-2027;2024;2027;21;PH;4;Pacto Histórico
+VALLE DEL CAUCA;2024-2027;2024;2027;21;PL;3;Partido Liberal
+VALLE DEL CAUCA;2024-2027;2024;2027;21;AV;2;Alianza Verde
+VALLE DEL CAUCA;2024-2027;2024;2027;21;CD;2;Centro Democrático
+VALLE DEL CAUCA;2024-2027;2024;2027;21;CR;2;Cambio Radical
+VALLE DEL CAUCA;2024-2027;2024;2027;21;PC;1;Partido Conservador
+VALLE DEL CAUCA;2024-2027;2024;2027;21;COLR;1;Otros / coaliciones / movimientos regionales
+VALLE DEL CAUCA;2024-2027;2024;2027;21;Valle nos Une;1;Otros / coaliciones / movimientos regionales
+VAUPÉS;2024-2027;2024;2027;11;U;3;Partido de la U
+VAUPÉS;2024-2027;2024;2027;11;CR;2;Cambio Radical
+VAUPÉS;2024-2027;2024;2027;11;DEM;2;Otros / coaliciones / movimientos regionales
+VAUPÉS;2024-2027;2024;2027;11;AV;1;Alianza Verde
+VAUPÉS;2024-2027;2024;2027;11;MAIS;1;MAIS
+VAUPÉS;2024-2027;2024;2027;11;PL;1;Partido Liberal
+VAUPÉS;2024-2027;2024;2027;11;LF;1;Otros / coaliciones / movimientos regionales
+VICHADA;2024-2027;2024;2027;11;U;2;Partido de la U
+VICHADA;2024-2027;2024;2027;11;ASI;2;ASI (Alianza Social Independiente)
+VICHADA;2024-2027;2024;2027;11;PL;2;Partido Liberal
+VICHADA;2024-2027;2024;2027;11;AV;1;Alianza Verde
+VICHADA;2024-2027;2024;2027;11;CD;1;Centro Democrático
+VICHADA;2024-2027;2024;2027;11;MAIS;1;MAIS
+VICHADA;2024-2027;2024;2027;11;AICO;1;AICO
+VICHADA;2024-2027;2024;2027;11;CR;1;Cambio Radical
