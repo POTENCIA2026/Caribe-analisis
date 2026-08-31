@@ -18,6 +18,7 @@ from data import (
 )
 from charts import (
     build_department_map,
+    build_dispersion_municipios,
     build_evolution_line,
     build_municipios_map,
     build_pastel,
@@ -27,6 +28,7 @@ from charts import (
     build_ranking_barras,
     build_pyramid,
     build_radar,
+    calcular_colores_departamentos_ml,
     calcular_colores_departamentos_pib,
     calcular_colores_municipios,
     COLOR_LINEA_DEFECTO,
@@ -125,12 +127,22 @@ with col_mapa:
                 calcular_colores_departamentos_pib(pib_sector_caribe, caribe, anio_sel)
                 if st.session_state["variable_activa"] == "PIB" else None
             )
+            colores_ml_dep = (
+                calcular_colores_departamentos_ml(geih_ocupados_rama, caribe, capitales, anio_sel)
+                if st.session_state["variable_activa"] == "Mercado laboral" else None
+            )
+            colores_dep = colores_pib_dep if colores_pib_dep is not None else colores_ml_dep
             fig_mapa = build_department_map(
-                mapa_caribe_geo, caribe, st.session_state["departamento_actual"], comparar_dep, colores_pib_dep,
+                mapa_caribe_geo, caribe, st.session_state["departamento_actual"], comparar_dep, colores_dep,
                 todos_activos=st.session_state["modo_total"],
             )
             if colores_pib_dep is not None:
                 st.caption("Color = mezcla ponderada de los sectores del PIB (huella económica) · borde oscuro = seleccionado")
+            elif colores_ml_dep is not None:
+                st.caption(
+                    "Color = mezcla ponderada de las ramas de ocupación en la capital (huella laboral) · "
+                    "borde oscuro = seleccionado"
+                )
             evento_mapa = st.plotly_chart(fig_mapa, on_select="rerun", key="click_mapa_dep", selection_mode="points")
             nuevo_dep = _procesar_click(evento_mapa, nombres_caribe, "_ultimo_click_mapa_dep")
             if nuevo_dep:
@@ -659,6 +671,26 @@ elif variable_activa == "PIB":
                 )
             if fig_pastel is not None:
                 st.plotly_chart(fig_pastel, width="stretch")
+
+    st.divider()
+    st.subheader("PIB per cápita municipal — Región Caribe", divider="gray")
+    datos_disp = mun[mun["anio"] == anio_sel][
+        ["nombre_entidad", "nombre_departamento", "valor_agregado", "poblacion_total"]
+    ].dropna()
+    datos_disp = datos_disp[datos_disp["poblacion_total"] > 0]
+    if datos_disp.empty:
+        st.info(f"No hay datos de PIB municipal per cápita para {anio_sel}.")
+    else:
+        datos_disp = datos_disp.assign(pib_percapita=datos_disp["valor_agregado"] / datos_disp["poblacion_total"])
+        fig_disp = build_dispersion_municipios(
+            datos_disp["nombre_departamento"], datos_disp["nombre_entidad"], datos_disp["pib_percapita"],
+            f"PIB per cápita municipal — Región Caribe ({anio_sel})", "PIB per cápita (COP)",
+        )
+        st.plotly_chart(fig_disp, width="stretch")
+        st.caption(
+            "Cada punto es un municipio. El PIB municipal (valor agregado) suele llegar con un año de "
+            "rezago frente al departamental, así que puede faltar el año más reciente."
+        )
 
 elif variable_activa == "Mercado laboral":
     # El widget se instancia una sola vez aquí (antes de construir el

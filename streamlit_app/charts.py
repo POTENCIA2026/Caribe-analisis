@@ -202,6 +202,32 @@ def calcular_colores_departamentos_pib(pib_sector_caribe, caribe, anio_sel):
     return colores
 
 
+def calcular_colores_departamentos_ml(geih_ocupados_rama, caribe, capitales, anio_sel):
+    """Igual que calcular_colores_departamentos_pib, pero para Mercado
+    laboral: mezcla ponderada de los colores fijos de cada rama
+    (COLOR_RAMA_GEIH) según cuántos ocupados tiene en ese año -- la huella
+    de su estructura laboral. La GEIH solo cubre la ciudad capital de cada
+    departamento, así que la composición de la capital hace de proxy del
+    departamento entero (igual que ya se hace en las tarjetas y el mapa
+    municipal)."""
+    colores = {}
+    for nombre_dep in caribe:
+        capital = capitales.get(nombre_dep)
+        fila = geih_ocupados_rama[
+            (geih_ocupados_rama["nombre_entidad"] == capital) & (geih_ocupados_rama["anio"] == anio_sel)
+        ]
+        pares = []
+        if not fila.empty:
+            f = fila.iloc[0]
+            for rama_original, rama_corta in NOMBRES_RAMA_CORTOS.items():
+                valor = f.get(rama_original)
+                color = COLOR_RAMA_GEIH.get(rama_corta)
+                if color and pd.notna(valor) and valor > 0:
+                    pares.append((color, valor))
+        colores[nombre_dep] = _mezclar_colores_ponderados(pares) if pares else COLOR_SIN_DATO
+    return colores
+
+
 # ------------------------------------------------------------------
 # Mapa de municipios (drill-down)
 # ------------------------------------------------------------------
@@ -580,5 +606,36 @@ def build_pyramid(hombres_frente, mujeres_frente, titulo, hombres_fondo=None, mu
         xaxis=dict(title="Población", range=[-max_val * 1.05, max_val * 1.05], tickvals=tickvals, ticktext=ticktext),
         yaxis=dict(title="Grupo de edad"),
         legend=dict(orientation="h", y=-0.15),
+    )
+    return fig
+
+
+# ------------------------------------------------------------------
+# Dispersión tipo "strip plot" -- un punto por municipio, agrupados por
+# departamento en el eje Y. Inspirado en los gráficos de Bruegel/Eurostat
+# de PIB per cápita regional (países en Y, regiones como puntos), pero sin
+# los cuadrantes de "más/menos desarrollado que el promedio" ni el resto de
+# la decoración -- acá solo importa dónde cae cada municipio.
+# ------------------------------------------------------------------
+def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_titulo, color="#2a78d6"):
+    departamentos = list(departamentos)
+    municipios = list(municipios)
+    valores = [float(v) for v in valores]
+    orden = sorted(set(departamentos))
+    hovertext = [f"<b>{m}</b><br>{d}<br>${v:,.0f}<extra></extra>" for d, m, v in zip(departamentos, municipios, valores)]
+    fig = go.Figure(
+        go.Scatter(
+            x=valores, y=departamentos, mode="markers",
+            marker=dict(size=10, color=color, opacity=0.75, line=dict(width=1, color="white")),
+            hovertemplate=hovertext,
+        )
+    )
+    fig.update_layout(
+        title=titulo,
+        height=80 + 40 * len(orden),
+        margin=dict(l=20, r=20, t=50, b=40),
+        xaxis=dict(title=x_titulo),
+        yaxis=dict(categoryorder="array", categoryarray=orden, autorange="reversed"),
+        showlegend=False,
     )
     return fig
