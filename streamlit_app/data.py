@@ -192,6 +192,13 @@ def load_all() -> dict:
     geih_tasas = pd.read_csv(DATA_DIR / "geih_mercado_laboral_ciudades.csv", sep=";")
     geih_ocupados_rama = pd.read_csv(DATA_DIR / "geih_ocupados_rama_ciudades.csv", sep=";")
 
+    # Composición política de las asambleas departamentales -- las 33, para
+    # las 3 últimas elecciones (2016-2019, 2020-2023, 2024-2027). Fuente:
+    # Wikipedia (es), "Asamblea Departamental (Colombia)" -- dato
+    # colaborativo, contrastar con registraduria.gov.co si se necesita
+    # exactitud certificada.
+    composicion_asamblea = pd.read_csv(DATA_DIR / "composicion_asamblea_departamental.csv", sep=";")
+
     for df in (mun, dep):
         df[["poblacion_total", "poblacion_rural", "poblacion_urbana"]] = df[
             ["poblacion_total", "poblacion_rural", "poblacion_urbana"]
@@ -223,6 +230,7 @@ def load_all() -> dict:
         "piramide_mun": piramide_mun,
         "geih_tasas": geih_tasas,
         "geih_ocupados_rama": geih_ocupados_rama,
+        "composicion_asamblea": composicion_asamblea,
         "mapa_dep_geo": mapa_dep_geo,
         "mapa_mun_geo": mapa_mun_geo,
         "pilares_disponibles": pilares_disponibles,
