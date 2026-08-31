@@ -718,17 +718,35 @@ elif variable_activa == "PIB":
             promedio_regional = (
                 dep_anio_disp["pib"].sum() / dep_anio_disp["poblacion_total"].sum() if not dep_anio_disp.empty else None
             )
+            if incluir_nacional:
+                # Con las 33 en pantalla, hay que distinguir la Región
+                # Caribe del resto del país -- verde para el Caribe, amarillo
+                # para el departamento activo en el mapa (ninguno en modo
+                # Total, ahí ya están todos resaltados).
+                seleccionado_disp = None if modo_total else nombre_dep
+                color_disp = [
+                    "#f5c518" if d == seleccionado_disp else ("#22a559" if d in caribe else "#2a78d6")
+                    for d in datos_disp["nombre_departamento"]
+                ]
+            else:
+                color_disp = "#2a78d6"
             fig_disp = build_dispersion_municipios(
                 datos_disp["nombre_departamento"], datos_disp["nombre_entidad"], datos_disp["pib_percapita"],
                 f"PIB per cápita municipal — {ambito_disp} ({anio_sel})", "PIB per cápita (COP)",
+                color=color_disp,
                 capitales=capitales, promedios_departamento=promedios_departamento, promedio_regional=promedio_regional,
                 etiqueta_promedio=etiqueta_promedio_disp,
             )
             st.plotly_chart(fig_disp, width="stretch")
+            aviso_colores = (
+                " Verde = departamentos de la Región Caribe · amarillo = el departamento activo en el mapa."
+                if incluir_nacional else ""
+            )
             st.caption(
                 "Punto pequeño = ciudad capital · cuadrado = PIB per cápita del departamento · línea vertical = "
-                f"promedio de {ambito_disp}. Cada punto es un municipio; el PIB municipal (valor agregado) suele llegar "
-                "con un año de rezago frente al departamental, así que puede faltar el año más reciente."
+                f"promedio de {ambito_disp}." + aviso_colores + " Cada punto es un municipio; el PIB municipal "
+                "(valor agregado) suele llegar con un año de rezago frente al departamental, así que puede faltar "
+                "el año más reciente."
             )
 
 elif variable_activa == "Mercado laboral":
