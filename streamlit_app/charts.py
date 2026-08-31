@@ -618,7 +618,8 @@ def build_pyramid(hombres_frente, mujeres_frente, titulo, hombres_fondo=None, mu
 # la decoración -- acá solo importa dónde cae cada municipio.
 # ------------------------------------------------------------------
 def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_titulo, color="#2a78d6",
-                                 capitales=None, promedios_departamento=None, promedio_regional=None):
+                                 capitales=None, promedios_departamento=None, promedio_regional=None,
+                                 etiqueta_promedio="Promedio Región Caribe"):
     departamentos = list(departamentos)
     municipios = list(municipios)
     valores = [float(v) for v in valores]
@@ -659,7 +660,7 @@ def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_ti
     if promedio_regional is not None:
         fig.add_vline(
             x=promedio_regional, line=dict(color="#111827", width=1.5, dash="dash"),
-            annotation_text="Promedio Región Caribe", annotation_position="top",
+            annotation_text=etiqueta_promedio, annotation_position="top",
         )
 
     fig.update_layout(

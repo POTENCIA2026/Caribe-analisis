@@ -40,6 +40,7 @@ st.set_page_config(page_title="Caribe Colombiano — Panel departamental", layou
 
 data = load_all()
 mun = data["mun"]
+mun_nacional = data["mun_nacional"]
 dep = data["dep"]
 dep_nacional = data["dep_nacional"]
 idc_pilares = data["idc_pilares"]
@@ -419,10 +420,16 @@ elif variable_activa == "PIB":
                 st.rerun()
     with col_der:
         slot_der = st.empty()
-        modo_part = st.segmented_control(
-            "Vista de participación", ["Sectorial", "Regional/Nacional"], default="Sectorial",
-            key="modo_participacion_pib", label_visibility="collapsed", persist_state="session",
-        )
+        if modo_linea == "Per cápita":
+            # En modo Per cápita el gráfico de al lado deja de ser la
+            # composición sectorial (no tiene sentido por-cápita) y pasa a
+            # ser el ranking de departamentos -- no hay nada que alternar.
+            modo_part = None
+        else:
+            modo_part = st.segmented_control(
+                "Vista de participación", ["Sectorial", "Regional/Nacional"], default="Sectorial",
+                key="modo_participacion_pib", label_visibility="collapsed", persist_state="session",
+            )
 
     ambito_pib = "Región Caribe" if modo_total else nombre_dep
 
@@ -511,7 +518,22 @@ elif variable_activa == "PIB":
         st.plotly_chart(fig_linea, width="stretch")
 
     with slot_der.container():
-        if modo_part == "Sectorial":
+        if modo_linea == "Per cápita":
+            dep_anio_rank = dep[dep["anio"] == anio_sel].dropna(subset=["pib", "poblacion_total"])
+            if dep_anio_rank.empty:
+                st.info(f"No hay datos de PIB per cápita departamental para {anio_sel}.")
+            else:
+                etiquetas_rank = dep_anio_rank["nombre_entidad"].tolist()
+                valores_rank = (dep_anio_rank["pib"] / dep_anio_rank["poblacion_total"]).tolist()
+                fig_rank_dep = build_ranking_barras(
+                    etiquetas_rank, valores_rank,
+                    f"PIB per cápita por departamento — Región Caribe ({anio_sel})",
+                    colores=["#2a78d6"] * len(etiquetas_rank), unidad="COP",
+                    seleccionado=None if modo_total else nombre_dep,
+                )
+                st.plotly_chart(fig_rank_dep, width="stretch")
+                st.caption("PIB departamental ÷ población del departamento.")
+        elif modo_part == "Sectorial":
             if modo_total:
                 datos = pib_sector_caribe[pib_sector_caribe["Año"] == anio_sel]
                 sectores = (
@@ -672,36 +694,42 @@ elif variable_activa == "PIB":
             if fig_pastel is not None:
                 st.plotly_chart(fig_pastel, width="stretch")
 
-    st.divider()
-    st.subheader("PIB per cápita municipal — Región Caribe", divider="gray")
-    datos_disp = mun[mun["anio"] == anio_sel][
-        ["nombre_entidad", "nombre_departamento", "valor_agregado", "poblacion_total"]
-    ].dropna()
-    datos_disp = datos_disp[datos_disp["poblacion_total"] > 0]
-    if datos_disp.empty:
-        st.info(f"No hay datos de PIB municipal per cápita para {anio_sel}.")
-    else:
-        datos_disp = datos_disp.assign(pib_percapita=datos_disp["valor_agregado"] / datos_disp["poblacion_total"])
-        dep_anio_disp = dep[(dep["anio"] == anio_sel) & (dep["nombre_entidad"].isin(caribe))].dropna(
-            subset=["pib", "poblacion_total"]
-        )
-        promedios_departamento = {
-            fila["nombre_entidad"]: fila["pib"] / fila["poblacion_total"] for _, fila in dep_anio_disp.iterrows()
-        }
-        promedio_regional = (
-            dep_anio_disp["pib"].sum() / dep_anio_disp["poblacion_total"].sum() if not dep_anio_disp.empty else None
-        )
-        fig_disp = build_dispersion_municipios(
-            datos_disp["nombre_departamento"], datos_disp["nombre_entidad"], datos_disp["pib_percapita"],
-            f"PIB per cápita municipal — Región Caribe ({anio_sel})", "PIB per cápita (COP)",
-            capitales=capitales, promedios_departamento=promedios_departamento, promedio_regional=promedio_regional,
-        )
-        st.plotly_chart(fig_disp, width="stretch")
-        st.caption(
-            "Punto pequeño = ciudad capital · cuadrado = PIB per cápita del departamento · línea vertical = "
-            "promedio de la Región Caribe. Cada punto es un municipio; el PIB municipal (valor agregado) suele llegar con un año de "
-            "rezago frente al departamental, así que puede faltar el año más reciente."
-        )
+    if modo_linea == "Per cápita":
+        st.divider()
+        st.subheader("PIB per cápita municipal — Región Caribe", divider="gray")
+        incluir_nacional = st.checkbox("Incluir el resto de Colombia", key="incluir_nacional_disp")
+        base_mun_disp = mun_nacional if incluir_nacional else mun
+        base_dep_disp = dep_nacional if incluir_nacional else dep
+        ambito_disp = "Colombia" if incluir_nacional else "Región Caribe"
+        etiqueta_promedio_disp = "Promedio Colombia" if incluir_nacional else "Promedio Región Caribe"
+
+        datos_disp = base_mun_disp[base_mun_disp["anio"] == anio_sel][
+            ["nombre_entidad", "nombre_departamento", "valor_agregado", "poblacion_total"]
+        ].dropna()
+        datos_disp = datos_disp[datos_disp["poblacion_total"] > 0]
+        if datos_disp.empty:
+            st.info(f"No hay datos de PIB municipal per cápita para {anio_sel}.")
+        else:
+            datos_disp = datos_disp.assign(pib_percapita=datos_disp["valor_agregado"] / datos_disp["poblacion_total"])
+            dep_anio_disp = base_dep_disp[base_dep_disp["anio"] == anio_sel].dropna(subset=["pib", "poblacion_total"])
+            promedios_departamento = {
+                fila["nombre_entidad"]: fila["pib"] / fila["poblacion_total"] for _, fila in dep_anio_disp.iterrows()
+            }
+            promedio_regional = (
+                dep_anio_disp["pib"].sum() / dep_anio_disp["poblacion_total"].sum() if not dep_anio_disp.empty else None
+            )
+            fig_disp = build_dispersion_municipios(
+                datos_disp["nombre_departamento"], datos_disp["nombre_entidad"], datos_disp["pib_percapita"],
+                f"PIB per cápita municipal — {ambito_disp} ({anio_sel})", "PIB per cápita (COP)",
+                capitales=capitales, promedios_departamento=promedios_departamento, promedio_regional=promedio_regional,
+                etiqueta_promedio=etiqueta_promedio_disp,
+            )
+            st.plotly_chart(fig_disp, width="stretch")
+            st.caption(
+                "Punto pequeño = ciudad capital · cuadrado = PIB per cápita del departamento · línea vertical = "
+                f"promedio de {ambito_disp}. Cada punto es un municipio; el PIB municipal (valor agregado) suele llegar "
+                "con un año de rezago frente al departamental, así que puede faltar el año más reciente."
+            )
 
 elif variable_activa == "Mercado laboral":
     # El widget se instancia una sola vez aquí (antes de construir el
