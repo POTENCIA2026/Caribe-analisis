@@ -94,6 +94,35 @@ def colores_hemiciclo(partidos_normalizados, partidos_raw):
             colores.append(COLOR_PARTIDOS.get(norm, "#9ca3af"))
     return colores
 
+
+# Nombres completos para siglas de partidos/coaliciones que caen en "Otros"
+# (partido_normalizado no trae un nombre propio para estos). Fuente: glosario
+# de siglas del Excel de origen (Wikipedia, "Asamblea Departamental (Colombia)").
+GLOSARIO_SIGLAS = {
+    "PL": "Partido Liberal", "PC": "Partido Conservador", "CR": "Cambio Radical",
+    "CD": "Centro Democrático", "AV": "Alianza Verde", "PH": "Pacto Histórico",
+    "ASI": "ASI", "MAIS": "MAIS", "MIRA": "MIRA", "AICO": "AICO",
+    "PDA": "Polo Democrático Alternativo", "U": "Partido de la U",
+    "NL": "Nuevo Liberalismo", "COLR": "Colombia Renaciente", "CRE": "Creemos Colombia",
+    "DEM": "Partido Demócrata Colombiano", "LF": "La Fuerza de las Regiones",
+    "ADA": "Alianza Democrática Amplia", "FC": "Fuerza Ciudadana", "EM": "En Marcha",
+    "GEM": "Gente en Movimiento", "MSN": "Salvación Nacional", "IN": "Independientes",
+    "CJL": "Colombia Justa Libres",
+}
+
+
+def nombre_legible_partido(sigla):
+    """Nombre completo para una sigla u coalición (p. ej. "CD-CJL" -> "Centro
+    Democrático + Colombia Justa Libres"). Si no reconoce alguna pieza, o la
+    entrada ya es un nombre propio (p. ej. "Alianza por Córdoba"), la deja
+    igual."""
+    if sigla in GLOSARIO_SIGLAS:
+        return GLOSARIO_SIGLAS[sigla]
+    if "-" in sigla and all(parte in GLOSARIO_SIGLAS for parte in sigla.split("-")):
+        return " + ".join(GLOSARIO_SIGLAS[parte] for parte in sigla.split("-"))
+    return sigla
+
+
 COLOR_ACTIVO = "#2563EB"
 COLOR_COMPARAR = "#F59E0B"
 COLOR_INACTIVO = "#E5E7EB"
