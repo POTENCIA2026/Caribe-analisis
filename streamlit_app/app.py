@@ -33,6 +33,8 @@ from charts import (
     calcular_colores_departamentos_pib,
     calcular_colores_municipios,
     colores_hemiciclo,
+    NOMBRE_OTROS_PARTIDOS,
+    nombre_legible_partido,
     COLOR_LINEA_DEFECTO,
     COLOR_RAMA_GEIH,
     COLOR_SECTORES_PIB,
@@ -1096,10 +1098,17 @@ elif variable_activa == "Composición Política":
     else:
         comp_agrupada = comp_agrupada.sort_values("curules", ascending=False)
         colores_wedge = colores_hemiciclo(comp_agrupada["partido_normalizado"], comp_agrupada["partido"])
+        # Nombre a mostrar: el nombre completo ya conocido para partidos
+        # nacionales, o el nombre/sigla expandida vía glosario para lo que cae
+        # en "Otros" (coaliciones/movimientos regionales).
+        nombres_mostrar = [
+            normalizado if normalizado != NOMBRE_OTROS_PARTIDOS else nombre_legible_partido(raw)
+            for raw, normalizado in zip(comp_agrupada["partido"], comp_agrupada["partido_normalizado"])
+        ]
 
         with col_izq:
             fig_hemiciclo = build_hemiciclo(
-                comp_agrupada["partido"], comp_agrupada["curules"], colores_wedge, titulo_hemiciclo,
+                nombres_mostrar, comp_agrupada["curules"], colores_wedge, titulo_hemiciclo,
                 subtitulo=f"Período {PERIODO_ASAMBLEA_VIGENTE} · {int(comp_agrupada['curules'].sum())} curules",
             )
             st.plotly_chart(fig_hemiciclo, width="stretch")
@@ -1109,7 +1118,7 @@ elif variable_activa == "Composición Política":
             )
         with col_der:
             fig_rank_partidos = build_ranking_barras(
-                comp_agrupada["partido"], comp_agrupada["curules"],
+                nombres_mostrar, comp_agrupada["curules"],
                 f"Curules por partido — {titulo_hemiciclo}", colores=colores_wedge, unidad="curules",
             )
             st.plotly_chart(fig_rank_partidos, width="stretch")
