@@ -170,6 +170,7 @@ def load_all() -> dict:
     mun = mun[mun["anio"] != 2025]
     dep = dep[dep["anio"] != 2025]
     dep_nacional = dep_full[dep_full["anio"] != 2025].copy()  # las 33, para el PIB total del país
+    mun_nacional = mun_full[mun_full["anio"] != 2025].copy()  # todos los municipios del país
 
     idc = pd.read_csv(DATA_DIR / "idc_departamental.csv", sep=";")
     dep = dep.merge(idc, on=["nombre_entidad", "anio"], how="left")
@@ -212,6 +213,7 @@ def load_all() -> dict:
 
     return {
         "mun": mun,
+        "mun_nacional": mun_nacional,
         "dep": dep,
         "dep_nacional": dep_nacional,
         "idc_pilares": idc_pilares,
