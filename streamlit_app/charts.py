@@ -617,25 +617,57 @@ def build_pyramid(hombres_frente, mujeres_frente, titulo, hombres_fondo=None, mu
 # los cuadrantes de "más/menos desarrollado que el promedio" ni el resto de
 # la decoración -- acá solo importa dónde cae cada municipio.
 # ------------------------------------------------------------------
-def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_titulo, color="#2a78d6"):
+def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_titulo, color="#2a78d6",
+                                 capitales=None, promedios_departamento=None, promedio_regional=None):
     departamentos = list(departamentos)
     municipios = list(municipios)
     valores = [float(v) for v in valores]
     orden = sorted(set(departamentos))
     hovertext = [f"<b>{m}</b><br>{d}<br>${v:,.0f}<extra></extra>" for d, m, v in zip(departamentos, municipios, valores)]
-    fig = go.Figure(
-        go.Scatter(
-            x=valores, y=departamentos, mode="markers",
-            marker=dict(size=10, color=color, opacity=0.75, line=dict(width=1, color="white")),
-            hovertemplate=hovertext,
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=valores, y=departamentos, mode="markers",
+        marker=dict(size=10, color=color, opacity=0.75, line=dict(width=1, color="white")),
+        hovertemplate=hovertext, name="Municipios",
+    ))
+
+    # Capitales: mismo punto, pero con un puntito oscuro encima para
+    # distinguirlas del resto de municipios del departamento.
+    if capitales:
+        idx_cap = [i for i, m in enumerate(municipios) if m == capitales.get(departamentos[i])]
+        if idx_cap:
+            fig.add_trace(go.Scatter(
+                x=[valores[i] for i in idx_cap], y=[departamentos[i] for i in idx_cap],
+                mode="markers", marker=dict(size=4, color="#111827"),
+                hovertext=[f"<b>{municipios[i]}</b> (capital)<br>{departamentos[i]}<br>${valores[i]:,.0f}" for i in idx_cap],
+                hovertemplate="%{hovertext}<extra></extra>", name="Capital",
+            ))
+
+    # Promedio departamental: un cuadrado por fila, en el PIB per cápita
+    # real del departamento (no el promedio simple de sus municipios).
+    if promedios_departamento:
+        deps_p = [d for d in orden if d in promedios_departamento]
+        vals_p = [promedios_departamento[d] for d in deps_p]
+        fig.add_trace(go.Scatter(
+            x=vals_p, y=deps_p, mode="markers",
+            marker=dict(size=12, color="#eb6834", symbol="square", line=dict(width=1, color="white")),
+            hovertemplate="<b>%{y}</b><br>Promedio departamental<br>$%{x:,.0f}<extra></extra>",
+            name="Promedio departamental",
+        ))
+
+    if promedio_regional is not None:
+        fig.add_vline(
+            x=promedio_regional, line=dict(color="#111827", width=1.5, dash="dash"),
+            annotation_text="Promedio Región Caribe", annotation_position="top",
         )
-    )
+
     fig.update_layout(
         title=titulo,
-        height=80 + 40 * len(orden),
+        height=max(560, 110 + 75 * len(orden)),
         margin=dict(l=20, r=20, t=50, b=40),
         xaxis=dict(title=x_titulo),
         yaxis=dict(categoryorder="array", categoryarray=orden, autorange="reversed"),
-        showlegend=False,
+        legend=dict(orientation="h", y=-0.1),
     )
     return fig
