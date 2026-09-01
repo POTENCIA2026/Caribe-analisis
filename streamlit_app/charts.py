@@ -1001,19 +1001,24 @@ def _filas_hemiciclo(n_puntos, radio_inicial=1.5, espacio_filas=0.55):
     return radios[-1], filas_datos
 
 
-def build_hemiciclo(partidos, curules, colores, titulo, subtitulo=None):
+def build_hemiciclo(partidos, curules, colores, titulo, subtitulo=None, opacidades=None):
     """partidos/curules/colores van en el mismo orden -- ese orden es el que
     define qué bloque queda más a la izquierda (deben venir ya ordenados de
     mayor a menor número de curules, como en los diagramas de parlamento
-    reales)."""
+    reales). opacidades (opcional, mismo orden): para resaltar un partido al
+    hacer click en el ranking de al lado -- 1.0 el elegido, un valor bajo el
+    resto."""
     partidos = list(partidos)
     curules = [int(c) for c in curules]
     colores = list(colores)
+    opacidades = list(opacidades) if opacidades is not None else None
     # Filtrar partidos sin curules para no complicar el reparto de abajo.
     _pos = [i for i, c in enumerate(curules) if c > 0]
     partidos = [partidos[i] for i in _pos]
     curules = [curules[i] for i in _pos]
     colores = [colores[i] for i in _pos]
+    if opacidades is not None:
+        opacidades = [opacidades[i] for i in _pos]
     total = sum(curules)
 
     if total <= 0:
@@ -1033,7 +1038,7 @@ def build_hemiciclo(partidos, curules, colores, titulo, subtitulo=None):
         key=lambda p: -p[0],
     )
 
-    xs, ys, colores_punto, texto = [], [], [], []
+    xs, ys, colores_punto, opacidades_punto, texto = [], [], [], [], []
     idx_partido = 0
     restantes = curules[0]
     for angulo, radio in puntos:
@@ -1044,6 +1049,7 @@ def build_hemiciclo(partidos, curules, colores, titulo, subtitulo=None):
         xs.append(x)
         ys.append(y)
         colores_punto.append(colores[idx_partido])
+        opacidades_punto.append(opacidades[idx_partido] if opacidades is not None else 1.0)
         n = curules[idx_partido]
         texto.append(f"<b>{partidos[idx_partido]}</b><br>{n} curul{'es' if n != 1 else ''}")
         restantes -= 1
@@ -1051,7 +1057,7 @@ def build_hemiciclo(partidos, curules, colores, titulo, subtitulo=None):
     fig = go.Figure(
         go.Scatter(
             x=xs, y=ys, mode="markers",
-            marker=dict(size=15, color=colores_punto, line=dict(width=1, color="white")),
+            marker=dict(size=15, color=colores_punto, opacity=opacidades_punto, line=dict(width=1, color="white")),
             hovertext=texto, hovertemplate="%{hovertext}<extra></extra>",
         )
     )
