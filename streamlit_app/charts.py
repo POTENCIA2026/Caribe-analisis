@@ -98,9 +98,9 @@ COLOR_PARTIDOS = {
     "Partido Conservador": "#1560BD",
     "Partido de la U": "#F2C511",
     "Cambio Radical": "#E24A33",
-    "Centro Democrático": "#F5A623",
+    "Centro Democrático": "#003F87",
     "Alianza Verde": "#2E9E4F",
-    "Pacto Histórico": "#E6007E",
+    "Pacto Histórico": "#7B2D8E",
     "ASI (Alianza Social Independiente)": "#17A398",
     "MAIS": "#C9A227",
     "MIRA": "#29ABE2",
@@ -109,19 +109,34 @@ COLOR_PARTIDOS = {
     "Opción Ciudadana": "#7F8C8D",
 }
 
+# Partidos menores que caen en "Otros" (partido_normalizado no les da un
+# nombre propio) pero igual conviene fijarles un color -- por su familia de
+# color reconocible (En Marcha del lado rojo, Fuerza Ciudadana del lado
+# naranja, Nuevo Liberalismo con el rosado/magenta que antes tenía Pacto
+# Histórico) en vez de dejarlos a lo que toque en la paleta automática. Va
+# por sigla cruda, no por nombre normalizado.
+COLOR_PARTIDOS_MENORES = {
+    "EM": "#D7263D",
+    "FC": "#FF8800",
+    "NL": "#E6007E",
+}
+
 
 def colores_hemiciclo(partidos_normalizados, partidos_raw):
     """Colores por partido: los tradicionales para los nacionales conocidos
-    (ver comentario de COLOR_PARTIDOS) y una paleta automática por
-    departamento (no oficial) para lo que cae en "Otros"."""
+    (ver comentario de COLOR_PARTIDOS), los fijos de COLOR_PARTIDOS_MENORES
+    para un puñado de partidos menores, y una paleta automática por
+    departamento (no oficial) para el resto de lo que cae en "Otros"."""
     otros_raw = list(dict.fromkeys(
-        raw for norm, raw in zip(partidos_normalizados, partidos_raw) if norm == NOMBRE_OTROS_PARTIDOS
+        raw for norm, raw in zip(partidos_normalizados, partidos_raw)
+        if norm == NOMBRE_OTROS_PARTIDOS and raw not in COLOR_PARTIDOS_MENORES
     ))
-    paleta_otros = _mapa_color_fijo(otros_raw, evitar=COLOR_PARTIDOS.values()) if otros_raw else {}
+    evitar = list(COLOR_PARTIDOS.values()) + list(COLOR_PARTIDOS_MENORES.values())
+    paleta_otros = _mapa_color_fijo(otros_raw, evitar=evitar) if otros_raw else {}
     colores = []
     for norm, raw in zip(partidos_normalizados, partidos_raw):
         if norm == NOMBRE_OTROS_PARTIDOS:
-            colores.append(paleta_otros.get(raw, "#9ca3af"))
+            colores.append(COLOR_PARTIDOS_MENORES.get(raw) or paleta_otros.get(raw, "#9ca3af"))
         else:
             colores.append(COLOR_PARTIDOS.get(norm, "#9ca3af"))
     return colores
