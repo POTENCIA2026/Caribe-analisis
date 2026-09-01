@@ -1113,8 +1113,9 @@ elif variable_activa == "Composición Política":
             )
             st.plotly_chart(fig_hemiciclo, width="stretch")
             st.caption(
-                "Elecciones regionales de octubre de 2023. Colores asignados automáticamente para distinguir "
-                "partidos entre sí -- no son necesariamente los oficiales de cada uno."
+                "Elecciones regionales de octubre de 2023. Colores: los tradicionales de cada partido nacional "
+                "(rojo liberal, azul conservador, etc.); coaliciones y movimientos regionales llevan un color "
+                "asignado automáticamente solo para distinguirlos entre sí."
             )
         with col_der:
             fig_rank_partidos = build_ranking_barras(
