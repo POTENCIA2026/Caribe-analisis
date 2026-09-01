@@ -177,7 +177,7 @@ COLOR_INACTIVO = "#E5E7EB"
 COLOR_PRIMARIAS = "#2a78d6"
 COLOR_SECUNDARIAS = "#eb6834"
 COLOR_TERCIARIAS = "#1baf7a"
-COLOR_DENSIDAD = "#2a78d6"
+COLOR_DENSIDAD = "#0E7C7B"  # azul verdoso
 COLOR_COMPETITIVIDAD = "#4a3aa7"
 COLOR_SIN_DATO = "#d9d9d9"
 COLOR_NEUTRO = "#93C5FD"
@@ -196,7 +196,14 @@ def _mezclar_con_blanco(color_hex, t):
 # ------------------------------------------------------------------
 # Mapa departamental
 # ------------------------------------------------------------------
-def build_department_map(mapa_caribe_geo, caribe, departamento_actual, comparar_con=None, colores_pib=None, todos_activos=False):
+def build_department_map(
+    mapa_caribe_geo, caribe, departamento_actual, comparar_con=None, colores_pib=None, todos_activos=False,
+    hover_extra=None,
+):
+    """hover_extra: {nombre_departamento: texto} opcional -- una línea extra
+    en el tooltip debajo del nombre (ej. la densidad poblacional calculada
+    en la vista de Población). Solo aplica a la rama de color por
+    departamento (colores_pib); el esquema fijo de 3 colores no lo usa."""
     nombres = [f["properties"]["nombre_entidad"] for f in mapa_caribe_geo["features"]]
 
     if colores_pib is not None:
@@ -208,6 +215,13 @@ def build_department_map(mapa_caribe_geo, caribe, departamento_actual, comparar_
         colorscale, z = _construir_colorscale_categorico(colores_lista)
         anchos = [3.5 if (todos_activos or n == departamento_actual) else 1.2 for n in nombres]
         lineas = ["#111827" if (todos_activos or n == departamento_actual) else "white" for n in nombres]
+        if hover_extra:
+            hovertext = [
+                f"<b>{n}</b><br>{hover_extra[n]}" if hover_extra.get(n) else f"<b>{n}</b>" for n in nombres
+            ]
+            hover_kwargs = dict(hovertext=hovertext, hovertemplate="%{hovertext}<extra></extra>")
+        else:
+            hover_kwargs = dict(hovertemplate="<b>%{location}</b><extra></extra>")
         fig = go.Figure(
             go.Choropleth(
                 geojson=mapa_caribe_geo,
@@ -219,7 +233,7 @@ def build_department_map(mapa_caribe_geo, caribe, departamento_actual, comparar_
                 showscale=False,
                 marker_line_color=lineas,
                 marker_line_width=anchos,
-                hovertemplate="<b>%{location}</b><extra></extra>",
+                **hover_kwargs,
             )
         )
     else:

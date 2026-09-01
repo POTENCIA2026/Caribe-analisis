@@ -142,10 +142,16 @@ with col_mapa:
                 calcular_colores_departamentos_poblacion(dep, caribe, anio_sel)
                 if st.session_state["variable_activa"] == "Población" else None
             )
+            hover_pob_dep = None
+            if colores_pob_dep is not None:
+                datos_dens_anio = dep[dep["anio"] == anio_sel].dropna(subset=["densidad_pob"]).set_index("nombre_entidad")
+                hover_pob_dep = {
+                    n: f"{datos_dens_anio.loc[n, 'densidad_pob']:,.1f} hab/km²" for n in datos_dens_anio.index
+                }
             colores_dep = colores_pib_dep if colores_pib_dep is not None else colores_ml_dep if colores_ml_dep is not None else colores_pob_dep
             fig_mapa = build_department_map(
                 mapa_caribe_geo, caribe, st.session_state["departamento_actual"], comparar_dep, colores_dep,
-                todos_activos=st.session_state["modo_total"],
+                todos_activos=st.session_state["modo_total"], hover_extra=hover_pob_dep,
             )
             if colores_pib_dep is not None:
                 st.caption("Color = mezcla ponderada de los sectores del PIB (huella económica) · borde oscuro = seleccionado")
