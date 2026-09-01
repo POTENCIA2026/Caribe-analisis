@@ -124,6 +124,12 @@ RAMA_A_SECTOR_PIB = {
 RAMAS_SECTOR_COMBINADO = {"Comercio y reparación de vehículos", "Alojamiento y servicios de comida", "Transporte y almacenamiento"}
 
 
+# El geojson trae "TURBANA" sin tilde -- no matchea con "TURBANÁ" (Bolívar)
+# como está escrito en el resto de las tablas, y ese municipio queda afuera
+# de cualquier mapa que filtre por nombre exacto.
+_CORRECCIONES_NOMBRE_ENTIDAD = {"TURBANA": "TURBANÁ"}
+
+
 @st.cache_data
 def _load_geojson(filename: str) -> dict:
     with open(DATA_DIR / filename, encoding="utf-8") as f:
@@ -134,6 +140,7 @@ def _load_geojson(filename: str) -> dict:
         props = feature["properties"]
         if "nombre entidad" in props:
             props["nombre_entidad"] = props.pop("nombre entidad")
+        props["nombre_entidad"] = _CORRECCIONES_NOMBRE_ENTIDAD.get(props["nombre_entidad"], props["nombre_entidad"])
     return geo
 
 
@@ -158,6 +165,27 @@ def geojson_municipios_de(mapa_mun_geo: dict, mun: pd.DataFrame, nombre_departam
         mapa_mun_geo,
         lambda p: (p["nombre_entidad"], p["codigo_dane"]) in pares_validos,
     )
+
+
+def geojson_municipios_caribe(mapa_mun_geo: dict, mun: pd.DataFrame) -> dict:
+    """Los 193 municipios de los 7 departamentos del Caribe de una sola vez
+    (para los mapas de profundización de Población urbana/rural, que
+    muestran toda la región en un solo mapa) -- le agrega a cada feature una
+    propiedad 'clave' (nombre + últimos 3 dígitos del código DANE) porque,
+    a diferencia del mapa de un solo departamento, acá SÍ hay nombres
+    repetidos entre departamentos (ej. VILLANUEVA en Bolívar y en La
+    Guajira) y el nombre solo ya no alcanza para identificar cada uno."""
+    filas = mun[["nombre_entidad", "codigo_dane"]].drop_duplicates()
+    codigos_cortos = filas["codigo_dane"].astype(str).str.zfill(5).str[-3:]
+    pares_validos = set(zip(filas["nombre_entidad"], codigos_cortos))
+    geo = filtrar_geojson(
+        mapa_mun_geo,
+        lambda p: (p["nombre_entidad"], p["codigo_dane"]) in pares_validos,
+    )
+    for feature in geo["features"]:
+        props = feature["properties"]
+        props["clave"] = f"{props['nombre_entidad']}|{props['codigo_dane']}"
+    return geo
 
 
 @st.cache_data
@@ -216,8 +244,12 @@ def load_all() -> dict:
     mun = mun.assign(
         log_poblacion=np.log10(mun["poblacion_total"]),
         densidad_pob=mun["poblacion_total"] / mun["area_km2"],
+        densidad_pob_urbana=mun["poblacion_urbana"] / mun["area_km2"],
+        densidad_pob_rural=mun["poblacion_rural"] / mun["area_km2"],
     )
     mun["log_densidad"] = np.log10(mun["densidad_pob"])
+    mun["log_densidad_urbana"] = np.log10(mun["densidad_pob_urbana"])
+    mun["log_densidad_rural"] = np.log10(mun["densidad_pob_rural"])
 
     # Área departamental = suma del área de sus municipios (no viene un dato
     # de área a nivel departamental aparte) -- con eso, densidad poblacional
@@ -229,19 +261,6 @@ def load_all() -> dict:
     dep = dep.merge(area_dep, on=["nombre_entidad", "anio"], how="left")
     dep["densidad_pob"] = dep["poblacion_total"] / dep["area_km2"]
     dep["log_densidad"] = np.log10(dep["densidad_pob"])
-
-    # Densidad de población URBANA -- mismo área departamental de siempre
-    # como denominador (no hay un dato de "área urbana" aparte, solo el área
-    # total del departamento), pero con la población urbana como numerador
-    # en vez de la total. Sirve para comparar qué tan concentrada está la
-    # población urbana de cada departamento en relación con su tamaño.
-    dep["densidad_pob_urbana"] = dep["poblacion_urbana"] / dep["area_km2"]
-    dep["log_densidad_urbana"] = np.log10(dep["densidad_pob_urbana"])
-
-    # Densidad de población RURAL -- mismo criterio que la urbana de arriba,
-    # con la población rural como numerador.
-    dep["densidad_pob_rural"] = dep["poblacion_rural"] / dep["area_km2"]
-    dep["log_densidad_rural"] = np.log10(dep["densidad_pob_rural"])
 
     mapa_dep_geo = _load_geojson("departamento.geojson")
     mapa_mun_geo = _load_geojson("municipio.geojson")

@@ -372,44 +372,6 @@ def calcular_colores_departamentos_poblacion(dep, caribe, anio_sel):
     return colores
 
 
-def calcular_colores_departamentos_densidad_urbana(dep, caribe, anio_sel):
-    """Igual que calcular_colores_departamentos_poblacion, pero con la
-    densidad de población URBANA (log_densidad_urbana) y en azul en vez de
-    azul verdoso -- para el mapa de profundización de Población urbana."""
-    datos_anio = dep[dep["anio"] == anio_sel].set_index("nombre_entidad")
-    log_densidades = datos_anio["log_densidad_urbana"].replace([np.inf, -np.inf], np.nan)
-    minimo, maximo = log_densidades.min(), log_densidades.max()
-    rango = (maximo - minimo) if pd.notna(maximo) and pd.notna(minimo) and maximo > minimo else None
-    colores = {}
-    for nombre_dep in caribe:
-        if nombre_dep not in datos_anio.index or pd.isna(datos_anio.loc[nombre_dep, "log_densidad_urbana"]):
-            colores[nombre_dep] = COLOR_SIN_DATO
-            continue
-        valor = datos_anio.loc[nombre_dep, "log_densidad_urbana"]
-        t = 0.5 if rango is None else (valor - minimo) / rango
-        colores[nombre_dep] = _mezclar_con_blanco(COLOR_DENSIDAD_URBANA, max(0.15, min(1.0, t)))
-    return colores
-
-
-def calcular_colores_departamentos_densidad_rural(dep, caribe, anio_sel):
-    """Igual que calcular_colores_departamentos_densidad_urbana, pero con la
-    densidad de población RURAL (log_densidad_rural) y en verde -- para el
-    mapa de profundización de Población rural."""
-    datos_anio = dep[dep["anio"] == anio_sel].set_index("nombre_entidad")
-    log_densidades = datos_anio["log_densidad_rural"].replace([np.inf, -np.inf], np.nan)
-    minimo, maximo = log_densidades.min(), log_densidades.max()
-    rango = (maximo - minimo) if pd.notna(maximo) and pd.notna(minimo) and maximo > minimo else None
-    colores = {}
-    for nombre_dep in caribe:
-        if nombre_dep not in datos_anio.index or pd.isna(datos_anio.loc[nombre_dep, "log_densidad_rural"]):
-            colores[nombre_dep] = COLOR_SIN_DATO
-            continue
-        valor = datos_anio.loc[nombre_dep, "log_densidad_rural"]
-        t = 0.5 if rango is None else (valor - minimo) / rango
-        colores[nombre_dep] = _mezclar_con_blanco(COLOR_DENSIDAD_RURAL, max(0.15, min(1.0, t)))
-    return colores
-
-
 def calcular_colores_departamentos_composicion(comp_vigente, caribe):
     """Un color por departamento: mezcla ponderada de los colores de sus
     partidos (los mismos que se ven en el hemiciclo -- colores_hemiciclo)
@@ -568,6 +530,82 @@ def build_municipios_map(mapa_geo, colores, nombre_departamento):
     fig.update_layout(
         title=f"Municipios de {nombre_departamento}",
         height=450,
+        margin=dict(l=0, r=0, t=50, b=0),
+    )
+    return fig
+
+
+def calcular_colores_municipios_region(mun, mapa_geo, anio_sel, columna_log, color_base):
+    """Un color por municipio (los 193 del Caribe de una vez), según
+    columna_log (ya en log10, ej. "log_densidad_urbana") normalizada entre
+    TODOS ellos -- no por departamento, para que el mapa completo use una
+    sola escala de color. mapa_geo debe venir de geojson_municipios_caribe
+    (trae la propiedad 'clave' que identifica cada municipio sin ambigüedad
+    entre departamentos)."""
+    claves = [f["properties"]["clave"] for f in mapa_geo["features"]]
+    datos_anio = mun[mun["anio"] == anio_sel].copy()
+    datos_anio["codigo_corto"] = datos_anio["codigo_dane"].astype(str).str.zfill(5).str[-3:]
+    datos_anio["clave"] = datos_anio["nombre_entidad"] + "|" + datos_anio["codigo_corto"]
+    datos_anio = datos_anio.set_index("clave")
+    log_densidades = datos_anio[columna_log].replace([np.inf, -np.inf], np.nan)
+    minimo, maximo = log_densidades.min(), log_densidades.max()
+    rango = (maximo - minimo) if pd.notna(maximo) and pd.notna(minimo) and maximo > minimo else None
+    colores = []
+    for clave in claves:
+        if clave not in datos_anio.index or pd.isna(datos_anio.loc[clave, columna_log]):
+            colores.append(COLOR_SIN_DATO)
+            continue
+        valor = datos_anio.loc[clave, columna_log]
+        t = 0.5 if rango is None else (valor - minimo) / rango
+        colores.append(_mezclar_con_blanco(color_base, max(0.15, min(1.0, t))))
+    return colores
+
+
+def build_municipios_map_region(mapa_geo, colores, mapa_departamentos_geo, titulo):
+    """Mapa de los 193 municipios del Caribe de una sola vez (a diferencia
+    de build_municipios_map, que muestra los de un solo departamento), con
+    los bordes departamentales resaltados encima -- mapa_geo debe venir de
+    geojson_municipios_caribe (trae la propiedad 'clave')."""
+    claves = [f["properties"]["clave"] for f in mapa_geo["features"]]
+    nombres_mun = [f["properties"]["nombre_entidad"] for f in mapa_geo["features"]]
+    colorscale, z = _construir_colorscale_categorico(colores)
+    fig = go.Figure(
+        go.Choropleth(
+            geojson=mapa_geo,
+            locations=claves,
+            z=z,
+            zmin=0,
+            zmax=max(len(colores), 1),
+            featureidkey="properties.clave",
+            colorscale=colorscale,
+            showscale=False,
+            marker_line_color="white",
+            marker_line_width=0.5,
+            text=nombres_mun,
+            hovertemplate="<b>%{text}</b><extra></extra>",
+        )
+    )
+    # Bordes departamentales encima, sin relleno propio (transparente) --
+    # solo para separar visualmente cada departamento dentro del mosaico de
+    # municipios, como en el mapa de referencia.
+    nombres_dep = [f["properties"]["nombre_entidad"] for f in mapa_departamentos_geo["features"]]
+    fig.add_trace(
+        go.Choropleth(
+            geojson=mapa_departamentos_geo,
+            locations=nombres_dep,
+            z=[0] * len(nombres_dep),
+            featureidkey="properties.nombre_entidad",
+            colorscale=[[0, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]],
+            showscale=False,
+            marker_line_color="#111827",
+            marker_line_width=2,
+            hoverinfo="skip",
+        )
+    )
+    fig.update_geos(fitbounds="locations", visible=False)
+    fig.update_layout(
+        title=titulo,
+        height=520,
         margin=dict(l=0, r=0, t=50, b=0),
     )
     return fig
