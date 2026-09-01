@@ -29,6 +29,7 @@ from charts import (
     build_ranking_barras,
     build_pyramid,
     build_radar,
+    calcular_colores_departamentos_composicion,
     calcular_colores_departamentos_ml,
     calcular_colores_departamentos_pib,
     calcular_colores_departamentos_poblacion,
@@ -56,6 +57,7 @@ piramide_mun = data["piramide_mun"]
 geih_tasas = data["geih_tasas"]
 geih_ocupados_rama = data["geih_ocupados_rama"]
 composicion_asamblea = data["composicion_asamblea"]
+composicion_concejo = data["composicion_concejo"]
 capitales = data["capitales"]
 pilares_disponibles = data["pilares_disponibles"]
 departamentos_pais = data["departamentos_pais"]
@@ -114,6 +116,13 @@ if st.session_state["comparar_con"] not in opciones_comparar:
 st.title("Tablero Caribe")
 st.caption("Seleccione un departamento y un año para explorar su perfil.")
 
+# Composición política de la asamblea -- siempre la vigente (2024-2027), sin
+# importar el año del slider (las asambleas se eligen cada 4 años). Se
+# calcula acá arriba (no solo más abajo, junto al resto del contenido de la
+# pestaña) porque el mapa también la necesita para colorear por partido.
+PERIODO_ASAMBLEA_VIGENTE = "2024-2027"
+comp_vigente = composicion_asamblea[composicion_asamblea["periodo"] == PERIODO_ASAMBLEA_VIGENTE]
+
 col_mapa, col_grafico = st.columns([1, 1])
 
 # ------------------------------------------------------------------
@@ -142,13 +151,22 @@ with col_mapa:
                 calcular_colores_departamentos_poblacion(dep, caribe, anio_sel)
                 if st.session_state["variable_activa"] == "Población" else None
             )
+            colores_comp_dep = (
+                calcular_colores_departamentos_composicion(comp_vigente, caribe)
+                if st.session_state["variable_activa"] == "Composición Política" else None
+            )
             hover_pob_dep = None
             if colores_pob_dep is not None:
                 datos_dens_anio = dep[dep["anio"] == anio_sel].dropna(subset=["densidad_pob"]).set_index("nombre_entidad")
                 hover_pob_dep = {
                     n: f"{datos_dens_anio.loc[n, 'densidad_pob']:,.1f} hab/km²" for n in datos_dens_anio.index
                 }
-            colores_dep = colores_pib_dep if colores_pib_dep is not None else colores_ml_dep if colores_ml_dep is not None else colores_pob_dep
+            colores_dep = (
+                colores_pib_dep if colores_pib_dep is not None
+                else colores_ml_dep if colores_ml_dep is not None
+                else colores_pob_dep if colores_pob_dep is not None
+                else colores_comp_dep
+            )
             fig_mapa = build_department_map(
                 mapa_caribe_geo, caribe, st.session_state["departamento_actual"], comparar_dep, colores_dep,
                 todos_activos=st.session_state["modo_total"], hover_extra=hover_pob_dep,
@@ -162,6 +180,11 @@ with col_mapa:
                 )
             elif colores_pob_dep is not None:
                 st.caption("Color = densidad poblacional (escala logarítmica) · más oscuro = más denso · borde oscuro = seleccionado")
+            elif colores_comp_dep is not None:
+                st.caption(
+                    "Color = mezcla ponderada de los partidos de la asamblea, según sus curules · "
+                    "borde oscuro = seleccionado"
+                )
             evento_mapa = st.plotly_chart(fig_mapa, on_select="rerun", key="click_mapa_dep", selection_mode="points")
             nuevo_dep = _procesar_click(evento_mapa, nombres_caribe, "_ultimo_click_mapa_dep")
             if nuevo_dep:
@@ -176,7 +199,7 @@ with col_mapa:
             mapa_mun_geo = geojson_municipios_de(data["mapa_mun_geo"], mun, st.session_state["departamento_actual"])
             colores, nombres_mun = calcular_colores_municipios(
                 mun, mapa_mun_geo, st.session_state["departamento_actual"], anio_sel, st.session_state["variable_activa"],
-                geih_tasas=geih_tasas,
+                geih_tasas=geih_tasas, composicion_concejo=composicion_concejo,
             )
             fig_municipios = build_municipios_map(mapa_mun_geo, colores, st.session_state["departamento_actual"])
             evento_mun = st.plotly_chart(fig_municipios, on_select="rerun", key="click_mapa_mun", selection_mode="points")
@@ -200,6 +223,11 @@ with col_mapa:
                 st.caption("El ICC solo evalúa la ciudad capital de cada departamento — el resto queda en gris.")
             elif st.session_state["variable_activa"] == "Mercado laboral":
                 st.caption("La GEIH solo evalúa la ciudad capital de cada departamento — el resto queda en gris.")
+            elif st.session_state["variable_activa"] == "Composición Política":
+                st.caption(
+                    "Color = mezcla ponderada de los partidos del concejo, según sus curules · gris = todavía sin "
+                    "datos registrados para ese municipio."
+                )
 
         if st.button(
             "◀ Volver al mapa departamental" if st.session_state["vista_municipios"] else "Ver municipios ▶",
@@ -344,18 +372,17 @@ else:
     st.caption(f"Perfil {'municipal' if municipio_actual else 'departamental'} — {anio_sel}")
 
 
-# Composición política de la asamblea -- siempre la vigente (2024-2027),
-# sin importar el año seleccionado en el slider (las asambleas se eligen
-# cada 4 años, no cambian de un año a otro como el resto de indicadores).
-# No hay dato a nivel municipal (la asamblea es un cuerpo departamental),
-# así que ignora el municipio seleccionado.
-PERIODO_ASAMBLEA_VIGENTE = "2024-2027"
-comp_vigente = composicion_asamblea[composicion_asamblea["periodo"] == PERIODO_ASAMBLEA_VIGENTE]
 if modo_total:
     comp_dep_actual = comp_vigente[comp_vigente["nombre_departamento"].isin(caribe)]
+    total_curules = comp_dep_actual["curules"].sum()
+elif municipio_actual:
+    # Igual que PIB/Competitividad: si hay un municipio seleccionado y ya
+    # se registró su concejo, la tarjeta muestra sus curules en vez de las
+    # de la asamblea departamental.
+    total_curules = composicion_concejo[composicion_concejo["nombre_municipio"] == municipio_actual]["curules"].sum()
 else:
     comp_dep_actual = comp_vigente[comp_vigente["nombre_departamento"] == nombre_dep]
-total_curules = comp_dep_actual["curules"].sum()
+    total_curules = comp_dep_actual["curules"].sum()
 composicion_fmt = f"{total_curules} curules" if total_curules else "—"
 
 c1, c2, c3, c4, c5, c6 = st.columns(6)
@@ -1092,11 +1119,18 @@ elif variable_activa == "Mercado laboral":
                 st.caption("Miles de personas, trimestre móvil Oct-Dic (GEIH, DANE).")
 
 elif variable_activa == "Composición Política":
-    # La asamblea es un cuerpo departamental -- no hay equivalente municipal,
-    # así que esta pestaña ignora el municipio seleccionado (siempre muestra
-    # el departamento completo) y no depende del año del slider (la
-    # composición solo cambia cada 4 años, con cada elección).
-    if modo_total:
+    # A nivel departamental es la asamblea (no depende del año del slider --
+    # se elige cada 4 años). Si hay un municipio seleccionado y ya se
+    # registró su concejo, se muestra el concejo de ese municipio en su
+    # lugar -- por ahora solo las 7 capitales, se irán sumando más a medida
+    # que se registren.
+    es_concejo = bool(municipio_actual) and not modo_total
+    if es_concejo:
+        comp_agrupada = composicion_concejo[composicion_concejo["nombre_municipio"] == municipio_actual][
+            ["partido", "partido_normalizado", "curules"]
+        ].copy()
+        titulo_hemiciclo = f"Concejo de {municipio_actual}"
+    elif modo_total:
         comp = comp_vigente[comp_vigente["nombre_departamento"].isin(caribe)]
         comp_agrupada = comp.groupby(["partido", "partido_normalizado"], as_index=False)["curules"].sum()
         titulo_hemiciclo = "Asambleas de la Región Caribe (combinadas)"
@@ -1107,7 +1141,13 @@ elif variable_activa == "Composición Política":
         titulo_hemiciclo = f"Asamblea de {nombre_dep}"
 
     if comp_agrupada.empty or comp_agrupada["curules"].sum() == 0:
-        st.info("No hay datos de composición política para esta selección.")
+        if es_concejo:
+            st.info(
+                f"Todavía no hay datos de composición del concejo para {municipio_actual} -- se irán sumando más "
+                "municipios a medida que se registren."
+            )
+        else:
+            st.info("No hay datos de composición política para esta selección.")
     else:
         comp_agrupada = comp_agrupada.sort_values("curules", ascending=False)
         colores_wedge = colores_hemiciclo(comp_agrupada["partido_normalizado"], comp_agrupada["partido"])
@@ -1125,21 +1165,35 @@ elif variable_activa == "Composición Política":
                 subtitulo=f"Período {PERIODO_ASAMBLEA_VIGENTE} · {int(comp_agrupada['curules'].sum())} curules",
             )
             st.plotly_chart(fig_hemiciclo, width="stretch")
-            st.caption(
-                "Elecciones regionales de octubre de 2023. Colores: los tradicionales de cada partido nacional "
-                "(rojo liberal, azul conservador, etc.); coaliciones y movimientos regionales llevan un color "
-                "asignado automáticamente solo para distinguirlos entre sí."
-            )
+            if es_concejo:
+                st.caption(
+                    "Situación actual del concejo -- incorpora renuncias, vacancias y reemplazos detectados en "
+                    "prensa hasta la fecha de corte, no la posesión inicial de enero de 2024. Colores: los "
+                    "tradicionales de cada partido nacional; coaliciones y movimientos regionales llevan un color "
+                    "asignado automáticamente solo para distinguirlos entre sí."
+                )
+            else:
+                st.caption(
+                    "Elecciones regionales de octubre de 2023. Colores: los tradicionales de cada partido nacional "
+                    "(rojo liberal, azul conservador, etc.); coaliciones y movimientos regionales llevan un color "
+                    "asignado automáticamente solo para distinguirlos entre sí."
+                )
         with col_der:
             fig_rank_partidos = build_ranking_barras(
                 nombres_mostrar, comp_agrupada["curules"],
                 f"Curules por partido — {titulo_hemiciclo}", colores=colores_wedge, unidad="curules",
             )
             st.plotly_chart(fig_rank_partidos, width="stretch")
-            st.caption(
-                "Fuente: Wikipedia (es), \"Asamblea Departamental (Colombia)\" -- dato colaborativo; "
-                "contrastar con registraduria.gov.co para usos que requieran exactitud certificada."
-            )
+            if es_concejo:
+                st.caption(
+                    "Fuente: directorios oficiales de cada Concejo y prensa regional -- dato colaborativo, sin una "
+                    "base centralizada única; contrastar directamente con cada Concejo antes de un uso oficial."
+                )
+            else:
+                st.caption(
+                    "Fuente: Wikipedia (es), \"Asamblea Departamental (Colombia)\" -- dato colaborativo; "
+                    "contrastar con registraduria.gov.co para usos que requieran exactitud certificada."
+                )
 
 else:  # Población
     with col_izq:

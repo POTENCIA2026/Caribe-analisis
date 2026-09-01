@@ -199,6 +199,15 @@ def load_all() -> dict:
     # exactitud certificada.
     composicion_asamblea = pd.read_csv(DATA_DIR / "composicion_asamblea_departamental.csv", sep=";")
 
+    # Composición política de los concejos municipales -- por ahora solo las
+    # 7 capitales (San Andrés no se pudo verificar), periodo 2024-2027,
+    # situación actual (incorpora renuncias/reemplazos detectados en prensa a
+    # la fecha de corte, no la posesión inicial de enero de 2024). Se irán
+    # sumando más municipios a medida que se registren. Fuente: directorios
+    # oficiales de cada Concejo y prensa regional -- dato colaborativo, sin
+    # una base centralizada única; contrastar antes de un uso oficial.
+    composicion_concejo = pd.read_csv(DATA_DIR / "composicion_concejo_municipal.csv", sep=";")
+
     for df in (mun, dep):
         df[["poblacion_total", "poblacion_rural", "poblacion_urbana"]] = df[
             ["poblacion_total", "poblacion_rural", "poblacion_urbana"]
@@ -242,6 +251,7 @@ def load_all() -> dict:
         "geih_tasas": geih_tasas,
         "geih_ocupados_rama": geih_ocupados_rama,
         "composicion_asamblea": composicion_asamblea,
+        "composicion_concejo": composicion_concejo,
         "mapa_dep_geo": mapa_dep_geo,
         "mapa_mun_geo": mapa_mun_geo,
         "pilares_disponibles": pilares_disponibles,

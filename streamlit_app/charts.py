@@ -370,6 +370,23 @@ def calcular_colores_departamentos_poblacion(dep, caribe, anio_sel):
     return colores
 
 
+def calcular_colores_departamentos_composicion(comp_vigente, caribe):
+    """Un color por departamento: mezcla ponderada de los colores de sus
+    partidos (los mismos que se ven en el hemiciclo -- colores_hemiciclo)
+    según cuántas curules tiene cada uno en esa asamblea. comp_vigente ya
+    viene filtrado al período vigente (2024-2027)."""
+    colores = {}
+    for nombre_dep in caribe:
+        datos = comp_vigente[comp_vigente["nombre_departamento"] == nombre_dep]
+        if datos.empty:
+            colores[nombre_dep] = COLOR_SIN_DATO
+            continue
+        colores_partido = colores_hemiciclo(datos["partido_normalizado"], datos["partido"])
+        pares = list(zip(colores_partido, datos["curules"]))
+        colores[nombre_dep] = _mezclar_colores_ponderados(pares)
+    return colores
+
+
 # ------------------------------------------------------------------
 # Mapa de municipios (drill-down)
 # ------------------------------------------------------------------
@@ -405,7 +422,9 @@ def _color_actividad_municipio(fila):
 COLOR_MERCADO_LABORAL = "#008300"  # verde
 
 
-def calcular_colores_municipios(mun, mapa_geo, nombre_departamento, anio_sel, variable, geih_tasas=None):
+def calcular_colores_municipios(
+    mun, mapa_geo, nombre_departamento, anio_sel, variable, geih_tasas=None, composicion_concejo=None,
+):
     nombres_mun = [f["properties"]["nombre_entidad"] for f in mapa_geo["features"]]
     datos_anio = mun[
         (mun["nombre_departamento"] == nombre_departamento) & (mun["anio"] == anio_sel)
@@ -463,6 +482,25 @@ def calcular_colores_municipios(mun, mapa_geo, nombre_departamento, anio_sel, va
             valor = datos_geih_anio.loc[nombre_mun, "td"]
             t = min(1.0, max(0.0, valor / TECHO_TD))
             colores.append(_mezclar_con_blanco(COLOR_MERCADO_LABORAL, t))
+        return colores, nombres_mun
+
+    if variable == "Composición Política":
+        # Mismo criterio que calcular_colores_departamentos_composicion, pero
+        # por municipio -- solo hay dato para los que ya se registraron (por
+        # ahora, las 7 capitales); el resto queda en gris, como en
+        # Competitividad/Mercado laboral.
+        colores = []
+        for nombre_mun in nombres_mun:
+            datos_mun = (
+                composicion_concejo[composicion_concejo["nombre_municipio"] == nombre_mun]
+                if composicion_concejo is not None else pd.DataFrame()
+            )
+            if datos_mun.empty:
+                colores.append(COLOR_SIN_DATO)
+                continue
+            colores_partido = colores_hemiciclo(datos_mun["partido_normalizado"], datos_mun["partido"])
+            pares = list(zip(colores_partido, datos_mun["curules"]))
+            colores.append(_mezclar_colores_ponderados(pares))
         return colores, nombres_mun
 
     return [COLOR_NEUTRO] * len(nombres_mun), nombres_mun
