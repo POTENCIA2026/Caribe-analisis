@@ -31,6 +31,7 @@ from charts import (
     build_radar,
     calcular_colores_departamentos_ml,
     calcular_colores_departamentos_pib,
+    calcular_colores_departamentos_poblacion,
     calcular_colores_municipios,
     colores_hemiciclo,
     NOMBRE_OTROS_PARTIDOS,
@@ -137,7 +138,11 @@ with col_mapa:
                 calcular_colores_departamentos_ml(geih_ocupados_rama, caribe, capitales, anio_sel)
                 if st.session_state["variable_activa"] == "Mercado laboral" else None
             )
-            colores_dep = colores_pib_dep if colores_pib_dep is not None else colores_ml_dep
+            colores_pob_dep = (
+                calcular_colores_departamentos_poblacion(dep, caribe, anio_sel)
+                if st.session_state["variable_activa"] == "Población" else None
+            )
+            colores_dep = colores_pib_dep if colores_pib_dep is not None else colores_ml_dep if colores_ml_dep is not None else colores_pob_dep
             fig_mapa = build_department_map(
                 mapa_caribe_geo, caribe, st.session_state["departamento_actual"], comparar_dep, colores_dep,
                 todos_activos=st.session_state["modo_total"],
@@ -149,6 +154,8 @@ with col_mapa:
                     "Color = mezcla ponderada de las ramas de ocupación en la capital (huella laboral) · "
                     "borde oscuro = seleccionado"
                 )
+            elif colores_pob_dep is not None:
+                st.caption("Color = densidad poblacional (escala logarítmica) · más oscuro = más denso · borde oscuro = seleccionado")
             evento_mapa = st.plotly_chart(fig_mapa, on_select="rerun", key="click_mapa_dep", selection_mode="points")
             nuevo_dep = _procesar_click(evento_mapa, nombres_caribe, "_ultimo_click_mapa_dep")
             if nuevo_dep:
@@ -1153,30 +1160,113 @@ else:  # Población
         st.plotly_chart(fig_linea, width="stretch")
 
     with col_der:
-        if modo_total:
-            datos_pir_total = piramide_dep[piramide_dep["nombre_entidad"].isin(caribe) & (piramide_dep["anio"] == anio_sel)]
-            datos_pir_total = datos_pir_total.groupby("grupo_edad")[["hombres", "mujeres"]].sum().reindex(ORDEN_GRUPOS_EDAD).fillna(0)
-            fig_piramide = build_pyramid(
-                datos_pir_total["hombres"], datos_pir_total["mujeres"], f"Pirámide poblacional — Región Caribe ({anio_sel})",
-            )
-        else:
-            datos_dep_pir = piramide_dep[(piramide_dep["nombre_entidad"] == nombre_dep) & (piramide_dep["anio"] == anio_sel)]
-            datos_dep_pir = datos_dep_pir.set_index("grupo_edad").reindex(ORDEN_GRUPOS_EDAD).fillna(0)
+        # st.empty() reserva el lugar del gráfico para llenarlo más abajo,
+        # después de leer el valor del toggle -- así el toggle queda
+        # visualmente debajo del gráfico (mismo truco que en PIB/Mercado
+        # laboral) en vez de encima.
+        slot_der_pob = st.empty()
+        modo_pob = st.segmented_control(
+            "Vista de población", ["Pirámide", "Participación poblacional"], default="Pirámide",
+            key="modo_vista_poblacion", label_visibility="collapsed", persist_state="session",
+        )
 
-            if municipio_actual:
-                datos_mun_pir = piramide_mun[
-                    (piramide_mun["nombre_entidad"] == municipio_actual)
-                    & (piramide_mun["nombre_departamento"] == nombre_dep)
-                    & (piramide_mun["anio"] == anio_sel)
-                ]
-                datos_mun_pir = datos_mun_pir.set_index("grupo_edad").reindex(ORDEN_GRUPOS_EDAD).fillna(0)
+    with slot_der_pob.container():
+        if modo_pob == "Pirámide":
+            if modo_total:
+                datos_pir_total = piramide_dep[piramide_dep["nombre_entidad"].isin(caribe) & (piramide_dep["anio"] == anio_sel)]
+                datos_pir_total = datos_pir_total.groupby("grupo_edad")[["hombres", "mujeres"]].sum().reindex(ORDEN_GRUPOS_EDAD).fillna(0)
                 fig_piramide = build_pyramid(
-                    datos_mun_pir["hombres"], datos_mun_pir["mujeres"],
-                    f"Pirámide poblacional — {municipio_actual} dentro de {nombre_dep} ({anio_sel})",
-                    hombres_fondo=datos_dep_pir["hombres"], mujeres_fondo=datos_dep_pir["mujeres"],
+                    datos_pir_total["hombres"], datos_pir_total["mujeres"], f"Pirámide poblacional — Región Caribe ({anio_sel})",
                 )
             else:
-                fig_piramide = build_pyramid(
-                    datos_dep_pir["hombres"], datos_dep_pir["mujeres"], f"Pirámide poblacional — {nombre_dep} ({anio_sel})",
+                datos_dep_pir = piramide_dep[(piramide_dep["nombre_entidad"] == nombre_dep) & (piramide_dep["anio"] == anio_sel)]
+                datos_dep_pir = datos_dep_pir.set_index("grupo_edad").reindex(ORDEN_GRUPOS_EDAD).fillna(0)
+
+                if municipio_actual:
+                    datos_mun_pir = piramide_mun[
+                        (piramide_mun["nombre_entidad"] == municipio_actual)
+                        & (piramide_mun["nombre_departamento"] == nombre_dep)
+                        & (piramide_mun["anio"] == anio_sel)
+                    ]
+                    datos_mun_pir = datos_mun_pir.set_index("grupo_edad").reindex(ORDEN_GRUPOS_EDAD).fillna(0)
+                    fig_piramide = build_pyramid(
+                        datos_mun_pir["hombres"], datos_mun_pir["mujeres"],
+                        f"Pirámide poblacional — {municipio_actual} dentro de {nombre_dep} ({anio_sel})",
+                        hombres_fondo=datos_dep_pir["hombres"], mujeres_fondo=datos_dep_pir["mujeres"],
+                    )
+                else:
+                    fig_piramide = build_pyramid(
+                        datos_dep_pir["hombres"], datos_dep_pir["mujeres"], f"Pirámide poblacional — {nombre_dep} ({anio_sel})",
+                    )
+            st.plotly_chart(fig_piramide, width="stretch")
+
+        else:  # Participación poblacional -- mismo esquema de colores y de
+            # "zoom" (resaltado / resto de la región / resto del país) que la
+            # vista Regional/Nacional de PIB, aplicado a población en vez de
+            # PIB.
+            valor_caribe_pob = dep[dep["anio"] == anio_sel]["poblacion_total"].sum()
+
+            if modo_total:
+                valor_nacional_pob = dep_nacional[dep_nacional["anio"] == anio_sel]["poblacion_total"].sum()
+                resto_nacional_pob = max(valor_nacional_pob - valor_caribe_pob, 0)
+                pct_nacional_pob = (valor_caribe_pob / valor_nacional_pob * 100) if valor_nacional_pob else 0
+                hover_pob = f"<b>Región Caribe</b><br>{pct_nacional_pob:.1f}% de Colombia<extra></extra>"
+                fig_pastel_pob = build_pastel_participacion_total(
+                    "Región Caribe", "Resto de Colombia", valor_caribe_pob, resto_nacional_pob,
+                    f"Participación poblacional de la Región Caribe en Colombia ({anio_sel})", hover_pob,
                 )
-        st.plotly_chart(fig_piramide, width="stretch")
+                st.plotly_chart(fig_pastel_pob, width="stretch")
+            elif municipio_actual:
+                fila_dep_anio_pob = dep[(dep["nombre_entidad"] == nombre_dep) & (dep["anio"] == anio_sel)]
+                valor_dep_pob = fila_dep_anio_pob["poblacion_total"].iloc[0] if not fila_dep_anio_pob.empty else 0
+                fila_mun_anio_pob = mun[
+                    (mun["nombre_entidad"] == municipio_actual)
+                    & (mun["nombre_departamento"] == nombre_dep)
+                    & (mun["anio"] == anio_sel)
+                ]
+                hay_dato_mun_pob = not fila_mun_anio_pob.empty and pd.notna(fila_mun_anio_pob["poblacion_total"].iloc[0])
+                if not hay_dato_mun_pob:
+                    st.info(f"No hay dato de población para {municipio_actual} en {anio_sel}.")
+                else:
+                    valor_mun_pob = fila_mun_anio_pob["poblacion_total"].iloc[0]
+                    resto_dep_pob = max(valor_dep_pob - valor_mun_pob, 0)
+                    resto_caribe_pob = max(valor_caribe_pob - valor_dep_pob, 0)
+                    pct_dep_pob = (valor_mun_pob / valor_dep_pob * 100) if valor_dep_pob else 0
+                    pct_caribe_pob = (valor_mun_pob / valor_caribe_pob * 100) if valor_caribe_pob else 0
+                    hover_pob = (
+                        f"<b>{municipio_actual}</b><br>{pct_dep_pob:.1f}% de {nombre_dep}<br>"
+                        f"{pct_caribe_pob:.1f}% de la Región Caribe<extra></extra>"
+                    )
+                    fig_pastel_pob = build_pastel_participacion(
+                        municipio_actual, f"Resto de {nombre_dep}", "Resto de la Región Caribe",
+                        valor_mun_pob, resto_dep_pob, resto_caribe_pob,
+                        f"Participación poblacional de {municipio_actual} en {nombre_dep} y la Región Caribe ({anio_sel})",
+                        hover_pob,
+                    )
+                    st.plotly_chart(fig_pastel_pob, width="stretch")
+            else:
+                fila_dep_anio_pob = dep[(dep["nombre_entidad"] == nombre_dep) & (dep["anio"] == anio_sel)]
+                valor_dep_pob = fila_dep_anio_pob["poblacion_total"].iloc[0] if not fila_dep_anio_pob.empty else 0
+                valor_nacional_pob = dep_nacional[dep_nacional["anio"] == anio_sel]["poblacion_total"].sum()
+                resto_caribe_pob = max(valor_caribe_pob - valor_dep_pob, 0)
+                resto_nacional_pob = max(valor_nacional_pob - valor_caribe_pob, 0)
+                pct_nacional_pob = (valor_dep_pob / valor_nacional_pob * 100) if valor_nacional_pob else 0
+                pct_caribe_pob = (valor_dep_pob / valor_caribe_pob * 100) if valor_caribe_pob else 0
+                pct_caribe_nacional_pob = (valor_caribe_pob / valor_nacional_pob * 100) if valor_nacional_pob else 0
+                hover_pob = (
+                    f"<b>{nombre_dep}</b><br>{pct_nacional_pob:.1f}% de Colombia<br>"
+                    f"{pct_caribe_pob:.1f}% de la Región Caribe<extra></extra>"
+                )
+                hover_medio_pob = f"<b>Región Caribe</b><br>{pct_caribe_nacional_pob:.1f}% de Colombia<extra></extra>"
+                fig_pastel_pob = build_pastel_participacion(
+                    nombre_dep, "Resto de la Región Caribe", "Resto de Colombia",
+                    valor_dep_pob, resto_caribe_pob, resto_nacional_pob,
+                    f"Participación poblacional de {nombre_dep} en la Región Caribe y Colombia ({anio_sel})",
+                    hover_pob, texto_hover_medio=hover_medio_pob,
+                )
+                st.plotly_chart(fig_pastel_pob, width="stretch")
+
+    # Población urbana -- sección nueva, todavía por desarrollar.
+    st.divider()
+    st.subheader("Población urbana", divider="gray")
+    st.caption("En construcción — la iremos completando en las próximas iteraciones.")
