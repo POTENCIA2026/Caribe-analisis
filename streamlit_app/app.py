@@ -13,6 +13,7 @@ from data import (
     RAMA_A_SECTOR_PIB,
     RAMAS_SECTOR_COMBINADO,
     filtrar_geojson,
+    geojson_municipios_caribe,
     geojson_municipios_de,
     load_all,
 )
@@ -22,6 +23,7 @@ from charts import (
     build_evolution_line,
     build_hemiciclo,
     build_municipios_map,
+    build_municipios_map_region,
     build_pastel,
     build_pastel_municipal,
     build_pastel_participacion,
@@ -30,15 +32,16 @@ from charts import (
     build_pyramid,
     build_radar,
     calcular_colores_departamentos_composicion,
-    calcular_colores_departamentos_densidad_rural,
-    calcular_colores_departamentos_densidad_urbana,
     calcular_colores_departamentos_ml,
     calcular_colores_departamentos_pib,
     calcular_colores_departamentos_poblacion,
     calcular_colores_municipios,
+    calcular_colores_municipios_region,
     colores_hemiciclo,
     NOMBRE_OTROS_PARTIDOS,
     nombre_legible_partido,
+    COLOR_DENSIDAD_RURAL,
+    COLOR_DENSIDAD_URBANA,
     COLOR_LINEA_DEFECTO,
     COLOR_RAMA_GEIH,
     COLOR_SECTORES_PIB,
@@ -68,6 +71,7 @@ anios_disponibles = data["anios_disponibles"]
 caribe = data["caribe"]
 
 mapa_caribe_geo = filtrar_geojson(data["mapa_dep_geo"], lambda p: p["nombre_entidad"] in caribe)
+mapa_caribe_municipios_geo = geojson_municipios_caribe(data["mapa_mun_geo"], mun)
 
 # ------------------------------------------------------------------
 # ESTADO
@@ -1328,46 +1332,44 @@ else:  # Población
                 )
                 st.plotly_chart(fig_pastel_pob, width="stretch")
 
-    # Población urbana -- sección nueva, todavía por desarrollar. Primer
-    # gráfico: un mapa igual al principal (mismo build_department_map),
-    # pero coloreado por densidad de población URBANA en vez de total.
+    # Población urbana / rural -- sección nueva, todavía por desarrollar.
+    # Primeros gráficos: mapas de los 193 municipios del Caribe de una sola
+    # vez (no uno por departamento), con los bordes departamentales
+    # resaltados encima -- mismo estilo que un mapa de referencia de
+    # ruralidad/densidad municipal.
     st.divider()
     st.subheader("Población urbana", divider="gray")
 
-    colores_urbana_dep = calcular_colores_departamentos_densidad_urbana(dep, caribe, anio_sel)
-    datos_urbana_anio = dep[dep["anio"] == anio_sel].dropna(subset=["densidad_pob_urbana"]).set_index("nombre_entidad")
-    hover_urbana_dep = {
-        n: f"{datos_urbana_anio.loc[n, 'densidad_pob_urbana']:,.1f} hab. urbanos/km²" for n in datos_urbana_anio.index
-    }
-    fig_mapa_urbano = build_department_map(
-        mapa_caribe_geo, caribe, nombre_dep, None, colores_urbana_dep,
-        todos_activos=modo_total, hover_extra=hover_urbana_dep,
+    colores_urbana_mun = calcular_colores_municipios_region(
+        mun, mapa_caribe_municipios_geo, anio_sel, "log_densidad_urbana", COLOR_DENSIDAD_URBANA,
+    )
+    fig_mapa_urbano = build_municipios_map_region(
+        mapa_caribe_municipios_geo, colores_urbana_mun, mapa_caribe_geo,
+        f"Densidad de población urbana — municipios del Caribe ({anio_sel})",
     )
     col_mapa_urbano, _ = st.columns([3, 2])
     with col_mapa_urbano:
         st.plotly_chart(fig_mapa_urbano, width="stretch")
         st.caption(
-            "Color = densidad de población urbana (población urbana ÷ área departamental, escala logarítmica) · "
-            "más oscuro = más denso."
+            "Color = densidad de población urbana por municipio (población urbana ÷ área, escala logarítmica) · "
+            "más oscuro = más denso · líneas gruesas = límites departamentales."
         )
 
     # Población rural -- mismo criterio que Población urbana de arriba, en
     # verde en vez de azul.
     st.subheader("Población rural", divider="gray")
 
-    colores_rural_dep = calcular_colores_departamentos_densidad_rural(dep, caribe, anio_sel)
-    datos_rural_anio = dep[dep["anio"] == anio_sel].dropna(subset=["densidad_pob_rural"]).set_index("nombre_entidad")
-    hover_rural_dep = {
-        n: f"{datos_rural_anio.loc[n, 'densidad_pob_rural']:,.1f} hab. rurales/km²" for n in datos_rural_anio.index
-    }
-    fig_mapa_rural = build_department_map(
-        mapa_caribe_geo, caribe, nombre_dep, None, colores_rural_dep,
-        todos_activos=modo_total, hover_extra=hover_rural_dep,
+    colores_rural_mun = calcular_colores_municipios_region(
+        mun, mapa_caribe_municipios_geo, anio_sel, "log_densidad_rural", COLOR_DENSIDAD_RURAL,
+    )
+    fig_mapa_rural = build_municipios_map_region(
+        mapa_caribe_municipios_geo, colores_rural_mun, mapa_caribe_geo,
+        f"Densidad de población rural — municipios del Caribe ({anio_sel})",
     )
     col_mapa_rural, _ = st.columns([3, 2])
     with col_mapa_rural:
         st.plotly_chart(fig_mapa_rural, width="stretch")
         st.caption(
-            "Color = densidad de población rural (población rural ÷ área departamental, escala logarítmica) · "
-            "más oscuro = más denso."
+            "Color = densidad de población rural por municipio (población rural ÷ área, escala logarítmica) · "
+            "más oscuro = más denso · líneas gruesas = límites departamentales."
         )
