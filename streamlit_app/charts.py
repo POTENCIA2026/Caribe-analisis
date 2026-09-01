@@ -335,6 +335,27 @@ def calcular_colores_departamentos_ml(geih_ocupados_rama, caribe, capitales, ani
     return colores
 
 
+def calcular_colores_departamentos_poblacion(dep, caribe, anio_sel):
+    """Un color por departamento según su densidad poblacional (escala
+    logarítmica, normalizada entre los 7 del Caribe para ese año) -- mismo
+    criterio que ya se usa para el mapa municipal (calcular_colores_municipios,
+    variable "Población"), solo que aquí el universo de comparación son los
+    7 departamentos en vez de los municipios de uno solo."""
+    datos_anio = dep[dep["anio"] == anio_sel].set_index("nombre_entidad")
+    log_densidades = datos_anio["log_densidad"].replace([np.inf, -np.inf], np.nan)
+    minimo, maximo = log_densidades.min(), log_densidades.max()
+    rango = (maximo - minimo) if pd.notna(maximo) and pd.notna(minimo) and maximo > minimo else None
+    colores = {}
+    for nombre_dep in caribe:
+        if nombre_dep not in datos_anio.index or pd.isna(datos_anio.loc[nombre_dep, "log_densidad"]):
+            colores[nombre_dep] = COLOR_SIN_DATO
+            continue
+        valor = datos_anio.loc[nombre_dep, "log_densidad"]
+        t = 0.5 if rango is None else (valor - minimo) / rango
+        colores[nombre_dep] = _mezclar_con_blanco(COLOR_DENSIDAD, max(0.15, min(1.0, t)))
+    return colores
+
+
 # ------------------------------------------------------------------
 # Mapa de municipios (drill-down)
 # ------------------------------------------------------------------

@@ -210,6 +210,17 @@ def load_all() -> dict:
     )
     mun["log_densidad"] = np.log10(mun["densidad_pob"])
 
+    # Área departamental = suma del área de sus municipios (no viene un dato
+    # de área a nivel departamental aparte) -- con eso, densidad poblacional
+    # departamental para el mapa, igual que ya se hace a nivel municipal.
+    area_dep = (
+        mun.groupby(["nombre_departamento", "anio"], as_index=False)["area_km2"].sum()
+        .rename(columns={"nombre_departamento": "nombre_entidad"})
+    )
+    dep = dep.merge(area_dep, on=["nombre_entidad", "anio"], how="left")
+    dep["densidad_pob"] = dep["poblacion_total"] / dep["area_km2"]
+    dep["log_densidad"] = np.log10(dep["densidad_pob"])
+
     mapa_dep_geo = _load_geojson("departamento.geojson")
     mapa_mun_geo = _load_geojson("municipio.geojson")
 
