@@ -244,12 +244,13 @@ def load_all() -> dict:
     mun = mun.assign(
         log_poblacion=np.log10(mun["poblacion_total"]),
         densidad_pob=mun["poblacion_total"] / mun["area_km2"],
-        densidad_pob_urbana=mun["poblacion_urbana"] / mun["area_km2"],
-        densidad_pob_rural=mun["poblacion_rural"] / mun["area_km2"],
+        # Tasa de urbanidad/ruralidad = qué % de la población del municipio
+        # vive en cabecera vs. resto -- no densidad (no usa el área para
+        # nada), son complementarias entre sí (suman 100%).
+        tasa_urbanidad=mun["poblacion_urbana"] / mun["poblacion_total"] * 100,
+        tasa_ruralidad=mun["poblacion_rural"] / mun["poblacion_total"] * 100,
     )
     mun["log_densidad"] = np.log10(mun["densidad_pob"])
-    mun["log_densidad_urbana"] = np.log10(mun["densidad_pob_urbana"])
-    mun["log_densidad_rural"] = np.log10(mun["densidad_pob_rural"])
 
     # Área departamental = suma del área de sus municipios (no viene un dato
     # de área a nivel departamental aparte) -- con eso, densidad poblacional
