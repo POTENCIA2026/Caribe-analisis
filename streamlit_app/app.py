@@ -86,6 +86,7 @@ def _init_estado():
         "sector_actual": None,
         "sector_actual_ml": None,
         "partido_actual": None,
+        "actividad_actual_mun": None,
         "modo_total": False,
         "interactuado": False,
     }
@@ -111,7 +112,19 @@ def _procesar_click(evento, nombres, key_ultimo):
 
 _init_estado()
 
-anio_sel = st.select_slider("Año", options=anios_disponibles, value=anios_disponibles[-1], key="anio_sel")
+# Click en un punto de una serie de tiempo -> mover el slider a ese año.
+# No se puede asignar st.session_state["anio_sel"] directamente donde se
+# detecta el click (mucho más abajo, después de que el slider ya se creó
+# en esta misma corrida) -- Streamlit no lo permite. Por eso el click deja
+# un valor "pendiente" acá arriba, ANTES de crear el widget, que es cuando
+# sí se puede fijar su estado. El valor por defecto (última corrida nunca
+# vista) se fija por separado con setdefault -- pasarlo también como
+# value= del widget, a la vez que ya está en session_state, es lo que
+# dispara la advertencia de Streamlit por los dos caminos pisándose.
+st.session_state.setdefault("anio_sel", anios_disponibles[-1])
+if "anio_click_pendiente" in st.session_state:
+    st.session_state["anio_sel"] = st.session_state.pop("anio_click_pendiente")
+anio_sel = st.select_slider("Año", options=anios_disponibles, key="anio_sel")
 
 if st.session_state["vista_municipios"]:
     opciones_comparar = ["Ninguno"] + ciudades_icc
@@ -199,6 +212,7 @@ with col_mapa:
                 st.session_state["departamento_actual"] = nuevo_dep
                 st.session_state["municipio_actual"] = None
                 st.session_state["sector_actual"] = None
+                st.session_state["actividad_actual_mun"] = None
                 st.session_state["sector_actual_ml"] = None
                 st.session_state["partido_actual"] = None
                 st.session_state["modo_total"] = False
@@ -215,6 +229,7 @@ with col_mapa:
             if nuevo_mun:
                 st.session_state["municipio_actual"] = nuevo_mun
                 st.session_state["sector_actual"] = None
+                st.session_state["actividad_actual_mun"] = None
                 st.session_state["sector_actual_ml"] = None
                 st.session_state["partido_actual"] = None
                 st.rerun()
@@ -245,6 +260,7 @@ with col_mapa:
             st.session_state["vista_municipios"] = not st.session_state["vista_municipios"]
             st.session_state["municipio_actual"] = None
             st.session_state["sector_actual"] = None
+            st.session_state["actividad_actual_mun"] = None
             st.session_state["sector_actual_ml"] = None
             st.session_state["partido_actual"] = None
             st.session_state["comparar_con"] = "Ninguno"
@@ -267,6 +283,7 @@ with col_mapa:
                     st.session_state["modo_total"] = True
                     st.session_state["municipio_actual"] = None
                     st.session_state["sector_actual"] = None
+                    st.session_state["actividad_actual_mun"] = None
                     st.session_state["sector_actual_ml"] = None
                     st.session_state["partido_actual"] = None
                     st.rerun()
@@ -278,6 +295,7 @@ with col_mapa:
                         st.session_state["departamento_actual"] = nombre
                         st.session_state["municipio_actual"] = None
                         st.session_state["sector_actual"] = None
+                        st.session_state["actividad_actual_mun"] = None
                         st.session_state["sector_actual_ml"] = None
                         st.session_state["partido_actual"] = None
                         st.session_state["modo_total"] = False
@@ -293,6 +311,7 @@ with col_mapa:
                         if not activo:
                             st.session_state["municipio_actual"] = nombre
                             st.session_state["sector_actual"] = None
+                            st.session_state["actividad_actual_mun"] = None
                             st.session_state["sector_actual_ml"] = None
                             st.session_state["partido_actual"] = None
                             st.rerun()
@@ -494,6 +513,10 @@ elif variable_activa == "PIB":
             if st.button(f"✕ Quitar {st.session_state['sector_actual']['nombre']}", key="quitar_sector"):
                 st.session_state["sector_actual"] = None
                 st.rerun()
+        if municipio_actual and st.session_state.get("actividad_actual_mun"):
+            if st.button(f"✕ Quitar {st.session_state['actividad_actual_mun']['nombre']}", key="quitar_actividad_mun"):
+                st.session_state["actividad_actual_mun"] = None
+                st.rerun()
     with col_der:
         slot_der = st.empty()
         if modo_linea == "Per cápita":
@@ -544,18 +567,29 @@ elif variable_activa == "PIB":
                     serie["anio"], y, anio_sel, f"Evolución de {y_titulo} — {ambito_pib}", y_titulo,
                 )
         elif municipio_actual:
-            serie = (
-                mun[(mun["nombre_entidad"] == municipio_actual) & (mun["nombre_departamento"] == nombre_dep)]
-                .dropna(subset=["valor_agregado"])
-                .sort_values("anio")
-            )
-            if modo_linea == "Per cápita":
-                y, y_titulo = serie["valor_agregado"] / serie["poblacion_total"], "PIB municipal per cápita"
+            actividad_actual_mun = st.session_state.get("actividad_actual_mun")
+            serie_base = mun[(mun["nombre_entidad"] == municipio_actual) & (mun["nombre_departamento"] == nombre_dep)].sort_values("anio")
+            if actividad_actual_mun:
+                columna_actividad = actividad_actual_mun["columna"]
+                serie = serie_base.dropna(subset=[columna_actividad])
+                if modo_linea == "Per cápita":
+                    y = serie[columna_actividad] / serie["poblacion_total"]
+                    y_titulo = f"{actividad_actual_mun['nombre']} per cápita"
+                else:
+                    y, y_titulo = serie[columna_actividad], actividad_actual_mun["nombre"]
+                fig_linea = build_evolution_line(
+                    serie["anio"], y, anio_sel, f"Evolución de {y_titulo} — {municipio_actual}", y_titulo,
+                    color_linea=actividad_actual_mun["color"],
+                )
             else:
-                y, y_titulo = serie["valor_agregado"], "PIB municipal (valor agregado)"
-            fig_linea = build_evolution_line(
-                serie["anio"], y, anio_sel, f"Evolución de PIB municipal — {municipio_actual}", y_titulo,
-            )
+                serie = serie_base.dropna(subset=["valor_agregado"])
+                if modo_linea == "Per cápita":
+                    y, y_titulo = serie["valor_agregado"] / serie["poblacion_total"], "PIB municipal per cápita"
+                else:
+                    y, y_titulo = serie["valor_agregado"], "PIB municipal (valor agregado)"
+                fig_linea = build_evolution_line(
+                    serie["anio"], y, anio_sel, f"Evolución de PIB municipal — {municipio_actual}", y_titulo,
+                )
         else:
             sector_actual = st.session_state["sector_actual"] if modo_part == "Sectorial" else None
             if sector_actual:
@@ -591,7 +625,26 @@ elif variable_activa == "PIB":
                 fig_linea = build_evolution_line(
                     serie["anio"], y, anio_sel, f"Evolución de {y_titulo} — {nombre_dep}", y_titulo,
                 )
-        st.plotly_chart(fig_linea, width="stretch")
+        if municipio_actual:
+            # Click en un punto de la línea -> saltar el slider de Año a ese
+            # punto (deja el valor "pendiente"; se aplica arriba, antes de
+            # crear el slider, en la próxima corrida).
+            evento_linea_pib = st.plotly_chart(
+                fig_linea, on_select="rerun", key="click_linea_pib_mun", selection_mode="points", width="stretch",
+            )
+            puntos_linea_pib = (
+                evento_linea_pib["selection"]["points"] if evento_linea_pib and evento_linea_pib.get("selection") else []
+            )
+            if puntos_linea_pib:
+                idx = puntos_linea_pib[0].get("point_index")
+                anios_serie_pib = list(serie["anio"])
+                if idx is not None and idx < len(anios_serie_pib):
+                    anio_click = int(anios_serie_pib[idx])
+                    if anio_click != anio_sel:
+                        st.session_state["anio_click_pendiente"] = anio_click
+                        st.rerun()
+        else:
+            st.plotly_chart(fig_linea, width="stretch")
 
     with slot_der.container():
         if modo_linea == "Per cápita":
@@ -657,7 +710,37 @@ elif variable_activa == "PIB":
                     st.info(f"No hay dato de composición del PIB para {municipio_actual} en {anio_sel}.")
                 else:
                     fig_pastel = build_pastel_municipal(fila_serie, f"Composición del PIB — {municipio_actual} ({anio_sel})")
-                    st.plotly_chart(fig_pastel, width="stretch")
+                    # Mismo motivo que la dona sectorial de más abajo:
+                    # st.plotly_chart(on_select=...) no dispara selección de
+                    # forma confiable en donas -- plotly_events sí.
+                    puntos_pastel_mun = plotly_events(
+                        fig_pastel, click_event=True, override_height=420, override_width="100%",
+                        key="click_pastel_mun",
+                    )
+                    etiquetas_actividad_mun = {
+                        "actividades_primarias": "Actividades primarias",
+                        "actividades_secundarias": "Actividades secundarias",
+                        "actividades_terciarias": "Actividades terciarias",
+                    }
+                    columnas_presentes = [c for c in columnas_actividad if pd.notna(fila_serie[c])]
+                    colores_presentes = list(fig_pastel.data[0].marker.colors)
+                    if puntos_pastel_mun:
+                        idx = puntos_pastel_mun[0].get("pointNumber")
+                        if idx is not None and idx < len(columnas_presentes):
+                            columna_click = columnas_presentes[idx]
+                            color_click = colores_presentes[idx % len(colores_presentes)]
+                            if st.session_state.get("_ultimo_click_pastel_mun") != (municipio_actual, anio_sel, columna_click):
+                                st.session_state["_ultimo_click_pastel_mun"] = (municipio_actual, anio_sel, columna_click)
+                                actual = st.session_state.get("actividad_actual_mun")
+                                if actual and actual["columna"] == columna_click:
+                                    st.session_state["actividad_actual_mun"] = None
+                                else:
+                                    st.session_state["actividad_actual_mun"] = {
+                                        "columna": columna_click,
+                                        "nombre": etiquetas_actividad_mun[columna_click],
+                                        "color": color_click,
+                                    }
+                                st.rerun()
             else:
                 datos = pib_sector_caribe[
                     (pib_sector_caribe["Departamento"] == nombre_dep) & (pib_sector_caribe["Año"] == anio_sel)
