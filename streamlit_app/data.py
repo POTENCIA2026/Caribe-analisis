@@ -230,6 +230,14 @@ def load_all() -> dict:
     dep["densidad_pob"] = dep["poblacion_total"] / dep["area_km2"]
     dep["log_densidad"] = np.log10(dep["densidad_pob"])
 
+    # Densidad de población URBANA -- mismo área departamental de siempre
+    # como denominador (no hay un dato de "área urbana" aparte, solo el área
+    # total del departamento), pero con la población urbana como numerador
+    # en vez de la total. Sirve para comparar qué tan concentrada está la
+    # población urbana de cada departamento en relación con su tamaño.
+    dep["densidad_pob_urbana"] = dep["poblacion_urbana"] / dep["area_km2"]
+    dep["log_densidad_urbana"] = np.log10(dep["densidad_pob_urbana"])
+
     mapa_dep_geo = _load_geojson("departamento.geojson")
     mapa_mun_geo = _load_geojson("municipio.geojson")
 
