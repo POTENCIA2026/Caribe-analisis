@@ -30,6 +30,7 @@ from charts import (
     build_pyramid,
     build_radar,
     calcular_colores_departamentos_composicion,
+    calcular_colores_departamentos_densidad_urbana,
     calcular_colores_departamentos_ml,
     calcular_colores_departamentos_pib,
     calcular_colores_departamentos_poblacion,
@@ -1326,7 +1327,25 @@ else:  # Población
                 )
                 st.plotly_chart(fig_pastel_pob, width="stretch")
 
-    # Población urbana -- sección nueva, todavía por desarrollar.
+    # Población urbana -- sección nueva, todavía por desarrollar. Primer
+    # gráfico: un mapa igual al principal (mismo build_department_map),
+    # pero coloreado por densidad de población URBANA en vez de total.
     st.divider()
     st.subheader("Población urbana", divider="gray")
-    st.caption("En construcción — la iremos completando en las próximas iteraciones.")
+
+    colores_urbana_dep = calcular_colores_departamentos_densidad_urbana(dep, caribe, anio_sel)
+    datos_urbana_anio = dep[dep["anio"] == anio_sel].dropna(subset=["densidad_pob_urbana"]).set_index("nombre_entidad")
+    hover_urbana_dep = {
+        n: f"{datos_urbana_anio.loc[n, 'densidad_pob_urbana']:,.1f} hab. urbanos/km²" for n in datos_urbana_anio.index
+    }
+    fig_mapa_urbano = build_department_map(
+        mapa_caribe_geo, caribe, nombre_dep, None, colores_urbana_dep,
+        todos_activos=modo_total, hover_extra=hover_urbana_dep,
+    )
+    col_mapa_urbano, _ = st.columns([3, 2])
+    with col_mapa_urbano:
+        st.plotly_chart(fig_mapa_urbano, width="stretch")
+        st.caption(
+            "Color = densidad de población urbana (población urbana ÷ área departamental, escala logarítmica) · "
+            "más oscuro = más denso."
+        )
