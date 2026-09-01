@@ -55,8 +55,19 @@ def _mas_opaco(color, l_max=0.60, s_min=0.55):
 # nada que ver (ej. "Impuestos" y "Agricultura, ganadería, caza...") caen
 # en el MISMO color exacto. Se completa con Set1 (9 colores más) para que
 # nunca haga falta repetir.
-def _mapa_color_fijo(nombres_cortos, offset=0):
+def _mapa_color_fijo(nombres_cortos, offset=0, evitar=()):
+    """evitar: colores (hex) que la paleta no debe imitar -- se descarta
+    cualquier color de la paleta demasiado parecido (distancia RGB) a
+    alguno de ellos, para no confundirse con colores fijos ya usados en el
+    mismo gráfico (p. ej. los oficiales de partido)."""
     paleta = [_mas_opaco(c) for c in px.colors.qualitative.Set3 + px.colors.qualitative.Set1]
+    if evitar:
+        referencias = [_a_rgb(c) for c in evitar]
+        paleta_filtrada = [
+            c for c in paleta
+            if all(sum((a - b) ** 2 for a, b in zip(_a_rgb(c), ref)) ** 0.5 >= 40 for ref in referencias)
+        ]
+        paleta = paleta_filtrada or paleta
     unicos = list(dict.fromkeys(nombres_cortos))
     return {nombre: paleta[(offset + i) % len(paleta)] for i, nombre in enumerate(unicos)}
 
@@ -76,16 +87,37 @@ PARTIDOS_NACIONALES_CONOCIDOS = [
     "Centro Democrático", "Alianza Verde", "Pacto Histórico", "ASI (Alianza Social Independiente)",
     "MAIS", "MIRA", "AICO", "Polo Democrático Alternativo", "Opción Ciudadana",
 ]
-COLOR_PARTIDOS = _mapa_color_fijo(PARTIDOS_NACIONALES_CONOCIDOS)
+# Colores tradicionalmente asociados a cada partido en Colombia (p. ej. rojo
+# para el Liberal y azul para el Conservador, una convención centenaria) --
+# no son códigos hex "oficiales" certificados por cada partido (no hay una
+# fuente única para eso), sino los colores con los que se los reconoce en la
+# prensa y en material electoral. Si alguno no calza con lo esperado, avisa
+# y se ajusta.
+COLOR_PARTIDOS = {
+    "Partido Liberal": "#E4080A",
+    "Partido Conservador": "#1560BD",
+    "Partido de la U": "#F2C511",
+    "Cambio Radical": "#E24A33",
+    "Centro Democrático": "#F5A623",
+    "Alianza Verde": "#2E9E4F",
+    "Pacto Histórico": "#E6007E",
+    "ASI (Alianza Social Independiente)": "#17A398",
+    "MAIS": "#C9A227",
+    "MIRA": "#29ABE2",
+    "AICO": "#7CB342",
+    "Polo Democrático Alternativo": "#8B0000",
+    "Opción Ciudadana": "#7F8C8D",
+}
 
 
 def colores_hemiciclo(partidos_normalizados, partidos_raw):
-    """Colores asignados automáticamente (no son necesariamente los oficiales
-    de cada partido) -- ver comentario de PARTIDOS_NACIONALES_CONOCIDOS."""
+    """Colores por partido: los tradicionales para los nacionales conocidos
+    (ver comentario de COLOR_PARTIDOS) y una paleta automática por
+    departamento (no oficial) para lo que cae en "Otros"."""
     otros_raw = list(dict.fromkeys(
         raw for norm, raw in zip(partidos_normalizados, partidos_raw) if norm == NOMBRE_OTROS_PARTIDOS
     ))
-    paleta_otros = _mapa_color_fijo(otros_raw, offset=len(PARTIDOS_NACIONALES_CONOCIDOS)) if otros_raw else {}
+    paleta_otros = _mapa_color_fijo(otros_raw, evitar=COLOR_PARTIDOS.values()) if otros_raw else {}
     colores = []
     for norm, raw in zip(partidos_normalizados, partidos_raw):
         if norm == NOMBRE_OTROS_PARTIDOS:
@@ -509,8 +541,13 @@ def build_ranking_barras(etiquetas, valores, titulo, colores=None, unidad="", se
             hovertemplate=hovertext,
         )
     )
+    # Alto proporcional a la cantidad de barras -- con pocas categorías (los
+    # rankings de departamentos, ~7-8) se queda en el mínimo de siempre; con
+    # muchas (partidos por asamblea, hasta ~14) crece para que cada nombre
+    # tenga su propia fila y no se encimen las etiquetas del eje.
+    altura = max(420, 34 * len(etiquetas_o) + 140)
     fig.update_layout(
-        title=titulo, height=420, margin=dict(l=20, r=20, t=50, b=20),
+        title=titulo, height=altura, margin=dict(l=20, r=20, t=50, b=20),
         yaxis=dict(automargin=True),
     )
     return fig
@@ -768,52 +805,49 @@ def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_ti
 def _filas_hemiciclo(n_puntos, radio_inicial=1.5, espacio_filas=0.55):
     """Devuelve (radio_max, filas) -- filas es una lista de (radio,
     [ángulos]) para los arcos concéntricos de un semicírculo (0° a 180°).
-    No asigna partido todavía: eso lo hace build_hemiciclo, según en qué
-    CUÑA ANGULAR caiga cada ángulo (no por su posición en una lista plana
-    -- un partido puede tener puntos en varias filas/radios a la vez, y
-    todos deben caer en el mismo rango de ángulo para formar una cuña
-    contigua, como en los diagramas de parlamento reales).
 
-    Las filas externas (radio mayor) tienen más arco disponible, así que
-    reciben proporcionalmente más puntos que las internas -- si no, la
-    fila externa se vería más "vacía" que la interna.
+    Cada fila reparte SUS PROPIOS puntos en ángulos igualmente espaciados a
+    lo ancho de todo el semicírculo -- por sí sola ya es simétrica
+    izquierda-derecha, y por lo tanto también lo es el semicírculo completo
+    (a diferencia de repartir los puntos entre filas con un algoritmo
+    secuencial, que tiende a sesgar las filas con pocos puntos hacia un
+    lado). La cantidad de puntos por fila es proporcional a su radio (más
+    circunferencia disponible = más puntos), con el método de "mayores
+    restos" para que las cuotas sumen exactamente n_puntos.
     """
     if n_puntos <= 0:
         return radio_inicial, []
     filas = max(1, round(math.sqrt(n_puntos / 0.6)))
     radios = [radio_inicial + i * espacio_filas for i in range(filas)]
 
-    # Un solo listón fino de n_puntos ángulos (uno por asiento, de 180° a
-    # 0°) -- el mismo listón que usa build_hemiciclo para los límites de
-    # cada partido, así que un ángulo SIEMPRE cae exactamente en la cuña
-    # que le corresponde, sin importar en qué fila termine. Si en cambio
-    # cada fila calculara sus propios ángulos con su propia cantidad de
-    # puntos (resolución más gruesa cuantos menos puntos tenga esa fila),
-    # una fila chica no podría distinguir partidos angostos -- eso es lo
-    # que pasaba antes.
-    objetivo = [n_puntos * r / sum(radios) for r in radios]  # cuota ideal de cada fila
-    asignados = [0] * filas
-    filas_angulos = [[] for _ in range(filas)]
-    for i in range(n_puntos):
-        angulo = math.pi - (i + 0.5) * math.pi / n_puntos
-        # Reparto por cociente más alto (mismo método que usan varios
-        # sistemas de escaños proporcionales): en cada paso, el asiento se
-        # lo lleva la fila que -- relativo a su cuota ideal hasta ahora --
-        # va más atrasada.
-        f_elegida = max(range(filas), key=lambda f: objetivo[f] * (i + 1) - asignados[f] * n_puntos)
-        filas_angulos[f_elegida].append(angulo)
-        asignados[f_elegida] += 1
+    exacto = [n_puntos * r / sum(radios) for r in radios]
+    cuota = [int(e) for e in exacto]
+    faltan = n_puntos - sum(cuota)
+    for f in sorted(range(filas), key=lambda f: exacto[f] - cuota[f], reverse=True)[:faltan]:
+        cuota[f] += 1
 
-    filas_datos = [(radios[f], angs) for f, angs in enumerate(filas_angulos) if angs]
+    filas_datos = []
+    for radio, m in zip(radios, cuota):
+        if m <= 0:
+            continue
+        angulos = [math.pi - (j + 0.5) * math.pi / m for j in range(m)]
+        filas_datos.append((radio, angulos))
     return radios[-1], filas_datos
 
 
 def build_hemiciclo(partidos, curules, colores, titulo, subtitulo=None):
     """partidos/curules/colores van en el mismo orden -- ese orden es el que
-    define qué cuña queda a la izquierda y cuál a la derecha."""
+    define qué bloque queda más a la izquierda (deben venir ya ordenados de
+    mayor a menor número de curules, como en los diagramas de parlamento
+    reales)."""
     partidos = list(partidos)
     curules = [int(c) for c in curules]
     colores = list(colores)
+    # Filtrar partidos sin curules para no complicar el reparto de abajo.
+    _pos = [i for i, c in enumerate(curules) if c > 0]
+    partidos = [partidos[i] for i in _pos]
+    curules = [curules[i] for i in _pos]
+    colores = [colores[i] for i in _pos]
     total = sum(curules)
 
     if total <= 0:
@@ -823,30 +857,30 @@ def build_hemiciclo(partidos, curules, colores, titulo, subtitulo=None):
 
     radio_max, filas_datos = _filas_hemiciclo(total)
 
-    # Límites angulares acumulados por partido: el primero ocupa desde 180°
-    # hasta 180°·(1 - curules[0]/total), el segundo sigue justo desde ahí,
-    # etc. -- así cada partido es una cuña angular contigua sin importar en
-    # cuántas filas (radios) le toque repartir sus puntos.
-    limites = [math.pi]
-    acumulado = 0
-    for n in curules:
-        acumulado += n
-        limites.append(math.pi * (1 - acumulado / total))
+    # Todos los puntos en una sola lista ordenada de izquierda (ángulo más
+    # grande) a derecha, y los partidos consumen tramos contiguos de esa
+    # lista en el orden dado -- el mismo criterio que usan los diagramas de
+    # parlamento reales (de ahí que el límite entre dos partidos zigzaguee
+    # un poco entre filas en vez de ser una línea recta desde el centro).
+    puntos = sorted(
+        ((angulo, radio) for radio, angulos in filas_datos for angulo in angulos),
+        key=lambda p: -p[0],
+    )
 
     xs, ys, colores_punto, texto = [], [], [], []
-    for radio, angulos in filas_datos:
-        for angulo in angulos:
-            idx_partido = len(curules) - 1
-            for i in range(len(curules)):
-                if limites[i + 1] - 1e-9 <= angulo <= limites[i] + 1e-9:
-                    idx_partido = i
-                    break
-            x, y = radio * math.cos(angulo), radio * math.sin(angulo)
-            xs.append(x)
-            ys.append(y)
-            colores_punto.append(colores[idx_partido])
-            n = curules[idx_partido]
-            texto.append(f"<b>{partidos[idx_partido]}</b><br>{n} curul{'es' if n != 1 else ''}")
+    idx_partido = 0
+    restantes = curules[0]
+    for angulo, radio in puntos:
+        while restantes == 0:
+            idx_partido += 1
+            restantes = curules[idx_partido]
+        x, y = radio * math.cos(angulo), radio * math.sin(angulo)
+        xs.append(x)
+        ys.append(y)
+        colores_punto.append(colores[idx_partido])
+        n = curules[idx_partido]
+        texto.append(f"<b>{partidos[idx_partido]}</b><br>{n} curul{'es' if n != 1 else ''}")
+        restantes -= 1
 
     fig = go.Figure(
         go.Scatter(
