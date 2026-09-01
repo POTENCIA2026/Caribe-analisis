@@ -94,6 +94,24 @@ def _init_estado():
         st.session_state.setdefault(k, v)
 
 
+def _grafico_linea_con_click_anio(fig, key, anios_serie, anio_sel):
+    """Muestra un gráfico de línea con click-para-saltar-de-año: clickear un
+    punto mueve el slider de Año a ese punto. Reutilizado por todas las
+    series de tiempo del tablero (PIB, Mercado laboral, Población). Deja el
+    valor "pendiente" en session_state y fuerza un rerun -- se aplica arriba,
+    antes de crear el slider "Año", al inicio del script."""
+    evento_linea = st.plotly_chart(fig, on_select="rerun", key=key, selection_mode="points", width="stretch")
+    puntos = evento_linea["selection"]["points"] if evento_linea and evento_linea.get("selection") else []
+    if puntos:
+        idx = puntos[0].get("point_index")
+        anios_serie = list(anios_serie)
+        if idx is not None and idx < len(anios_serie):
+            anio_click = int(anios_serie[idx])
+            if anio_click != anio_sel:
+                st.session_state["anio_click_pendiente"] = anio_click
+                st.rerun()
+
+
 def _procesar_click(evento, nombres, key_ultimo):
     """Devuelve el nombre recién clickeado, o None si no hay nada nuevo
     (evita reprocesar la misma selección en cada rerun posterior)."""
@@ -625,26 +643,8 @@ elif variable_activa == "PIB":
                 fig_linea = build_evolution_line(
                     serie["anio"], y, anio_sel, f"Evolución de {y_titulo} — {nombre_dep}", y_titulo,
                 )
-        if municipio_actual:
-            # Click en un punto de la línea -> saltar el slider de Año a ese
-            # punto (deja el valor "pendiente"; se aplica arriba, antes de
-            # crear el slider, en la próxima corrida).
-            evento_linea_pib = st.plotly_chart(
-                fig_linea, on_select="rerun", key="click_linea_pib_mun", selection_mode="points", width="stretch",
-            )
-            puntos_linea_pib = (
-                evento_linea_pib["selection"]["points"] if evento_linea_pib and evento_linea_pib.get("selection") else []
-            )
-            if puntos_linea_pib:
-                idx = puntos_linea_pib[0].get("point_index")
-                anios_serie_pib = list(serie["anio"])
-                if idx is not None and idx < len(anios_serie_pib):
-                    anio_click = int(anios_serie_pib[idx])
-                    if anio_click != anio_sel:
-                        st.session_state["anio_click_pendiente"] = anio_click
-                        st.rerun()
-        else:
-            st.plotly_chart(fig_linea, width="stretch")
+        anio_col_serie = "Año" if "Año" in serie.columns else "anio"
+        _grafico_linea_con_click_anio(fig_linea, "click_linea_pib", serie[anio_col_serie], anio_sel)
 
     with slot_der.container():
         if modo_linea == "Per cápita":
@@ -963,7 +963,7 @@ elif variable_activa == "Mercado laboral":
                         f"Evolución de PIB por trabajador — {sector_actual_ml['nombre']} (Región Caribe)",
                         "PIB por trabajador (COP)", color_linea=sector_actual_ml["color"],
                     )
-                    st.plotly_chart(fig_linea, width="stretch")
+                    _grafico_linea_con_click_anio(fig_linea, "click_linea_ml_total_sector", serie["anio"], anio_sel)
                     aviso_combinado = (
                         " El PIB de este sector incluye además otras ramas de la GEIH que no están contadas "
                         "en estos ocupados (comercio, alojamiento y transporte van juntos en un solo sector "
@@ -985,7 +985,7 @@ elif variable_activa == "Mercado laboral":
                         serie["anio"], y, anio_sel,
                         "Evolución del PIB por trabajador — Región Caribe (7 capitales)", "PIB por trabajador (COP)",
                     )
-                    st.plotly_chart(fig_linea, width="stretch")
+                    _grafico_linea_con_click_anio(fig_linea, "click_linea_ml_total_pib", serie["anio"], anio_sel)
                     st.caption(
                         "Suma del PIB municipal (valor agregado) de las 7 capitales ÷ suma de sus ocupados (GEIH) "
                         "-- productividad laboral agregada."
@@ -1001,7 +1001,7 @@ elif variable_activa == "Mercado laboral":
                     "Evolución de la Tasa de Desocupación — Región Caribe (7 capitales)", "Tasa de desocupación (%)",
                     unidad="%",
                 )
-                st.plotly_chart(fig_linea, width="stretch")
+                _grafico_linea_con_click_anio(fig_linea, "click_linea_ml_total_td", serie["anio"], anio_sel)
                 st.caption("Desocupados ÷ fuerza de trabajo, sumados entre las 7 ciudades capitales (GEIH, DANE).")
         with col_der:
             fila_rama_total = geih_ocupados_rama[
@@ -1105,7 +1105,7 @@ elif variable_activa == "Mercado laboral":
                         f"Evolución de PIB por trabajador — {sector_actual_ml['nombre']} ({ciudad_ml})",
                         "PIB por trabajador (COP)", color_linea=sector_actual_ml["color"],
                     )
-                    st.plotly_chart(fig_linea, width="stretch")
+                    _grafico_linea_con_click_anio(fig_linea, "click_linea_ml_ciudad_sector", serie["anio"], anio_sel)
                     aviso_combinado = (
                         " El PIB de este sector en el departamento incluye además otras ramas de la GEIH "
                         "que no están contadas en estos ocupados (comercio, alojamiento y transporte van "
@@ -1129,7 +1129,7 @@ elif variable_activa == "Mercado laboral":
                         serie["anio"], y, anio_sel,
                         f"Evolución del PIB por trabajador — {ciudad_ml}", "PIB por trabajador (COP)",
                     )
-                    st.plotly_chart(fig_linea, width="stretch")
+                    _grafico_linea_con_click_anio(fig_linea, "click_linea_ml_ciudad_pib", serie["anio"], anio_sel)
                     st.caption(
                         "PIB municipal (valor agregado) ÷ ocupados (GEIH, trimestre móvil Oct-Dic) -- "
                         "productividad laboral, no productividad total (no incorpora capital). "
@@ -1142,7 +1142,7 @@ elif variable_activa == "Mercado laboral":
                     f"Evolución de la Tasa de Desocupación — {ciudad_ml}", "Tasa de desocupación (%)",
                     unidad="%",
                 )
-                st.plotly_chart(fig_linea, width="stretch")
+                _grafico_linea_con_click_anio(fig_linea, "click_linea_ml_ciudad_td", serie["anio"], anio_sel)
                 st.caption("Trimestre móvil Oct-Dic de cada año (GEIH, DANE).")
 
         with col_der:
@@ -1349,7 +1349,7 @@ else:  # Población
             fig_linea = build_evolution_line(
                 serie["anio"], serie["poblacion_total"], anio_sel, f"Evolución de Población — {nombre_dep}", "Población",
             )
-        st.plotly_chart(fig_linea, width="stretch")
+        _grafico_linea_con_click_anio(fig_linea, "click_linea_poblacion", serie["anio"], anio_sel)
 
     with col_der:
         # st.empty() reserva el lugar del gráfico para llenarlo más abajo,
