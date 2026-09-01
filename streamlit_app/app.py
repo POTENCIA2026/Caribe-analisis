@@ -85,6 +85,7 @@ def _init_estado():
         "comparar_con": "Ninguno",
         "sector_actual": None,
         "sector_actual_ml": None,
+        "partido_actual": None,
         "modo_total": False,
         "interactuado": False,
     }
@@ -199,6 +200,7 @@ with col_mapa:
                 st.session_state["municipio_actual"] = None
                 st.session_state["sector_actual"] = None
                 st.session_state["sector_actual_ml"] = None
+                st.session_state["partido_actual"] = None
                 st.session_state["modo_total"] = False
                 st.rerun()
         else:
@@ -214,6 +216,7 @@ with col_mapa:
                 st.session_state["municipio_actual"] = nuevo_mun
                 st.session_state["sector_actual"] = None
                 st.session_state["sector_actual_ml"] = None
+                st.session_state["partido_actual"] = None
                 st.rerun()
 
             # leyenda del mapa municipal
@@ -243,6 +246,7 @@ with col_mapa:
             st.session_state["municipio_actual"] = None
             st.session_state["sector_actual"] = None
             st.session_state["sector_actual_ml"] = None
+            st.session_state["partido_actual"] = None
             st.session_state["comparar_con"] = "Ninguno"
             st.session_state["modo_total"] = False
             st.rerun()
@@ -264,6 +268,7 @@ with col_mapa:
                     st.session_state["municipio_actual"] = None
                     st.session_state["sector_actual"] = None
                     st.session_state["sector_actual_ml"] = None
+                    st.session_state["partido_actual"] = None
                     st.rerun()
             for nombre in sorted(caribe):
                 activo = nombre == st.session_state["departamento_actual"] and not activo_total
@@ -274,6 +279,7 @@ with col_mapa:
                         st.session_state["municipio_actual"] = None
                         st.session_state["sector_actual"] = None
                         st.session_state["sector_actual_ml"] = None
+                        st.session_state["partido_actual"] = None
                         st.session_state["modo_total"] = False
                         st.rerun()
         else:
@@ -288,6 +294,7 @@ with col_mapa:
                             st.session_state["municipio_actual"] = nombre
                             st.session_state["sector_actual"] = None
                             st.session_state["sector_actual_ml"] = None
+                            st.session_state["partido_actual"] = None
                             st.rerun()
 
 # ------------------------------------------------------------------
@@ -836,6 +843,7 @@ elif variable_activa == "Mercado laboral":
             if st.session_state.get("sector_actual_ml"):
                 if st.button(f"✕ Quitar {st.session_state['sector_actual_ml']['nombre']}", key="quitar_sector_ml"):
                     st.session_state["sector_actual_ml"] = None
+                    st.session_state["partido_actual"] = None
                     st.rerun()
 
     if modo_total:
@@ -1164,11 +1172,26 @@ elif variable_activa == "Composición Política":
             normalizado if normalizado != NOMBRE_OTROS_PARTIDOS else nombre_legible_partido(raw)
             for raw, normalizado in zip(comp_agrupada["partido"], comp_agrupada["partido_normalizado"])
         ]
+        partido_actual = st.session_state.get("partido_actual")
+        if partido_actual not in nombres_mostrar:
+            # Cambió de selección (departamento/municipio) o el partido ya no
+            # está en esta composición -- no dejar una selección "fantasma".
+            partido_actual = None
+            st.session_state["partido_actual"] = None
+        opacidades_wedge = [1.0 if n == partido_actual else 0.15 for n in nombres_mostrar] if partido_actual else None
 
         with col_izq:
+            if partido_actual:
+                # Volver a hacer click en la misma barra no siempre dispara
+                # un nuevo evento de selección (Plotly no reenvía un valor
+                # idéntico al anterior) -- este botón siempre funciona.
+                if st.button(f"✕ Quitar {partido_actual}", key="quitar_partido"):
+                    st.session_state["partido_actual"] = None
+                    st.rerun()
             fig_hemiciclo = build_hemiciclo(
                 nombres_mostrar, comp_agrupada["curules"], colores_wedge, titulo_hemiciclo,
                 subtitulo=f"Período {PERIODO_ASAMBLEA_VIGENTE} · {int(comp_agrupada['curules'].sum())} curules",
+                opacidades=opacidades_wedge,
             )
             st.plotly_chart(fig_hemiciclo, width="stretch")
             if es_concejo:
@@ -1188,8 +1211,28 @@ elif variable_activa == "Composición Política":
             fig_rank_partidos = build_ranking_barras(
                 nombres_mostrar, comp_agrupada["curules"],
                 f"Curules por partido — {titulo_hemiciclo}", colores=colores_wedge, unidad="curules",
+                seleccionado=partido_actual,
             )
-            st.plotly_chart(fig_rank_partidos, width="stretch")
+            evento_rank_comp = st.plotly_chart(
+                fig_rank_partidos, on_select="rerun", key="click_ranking_comp", selection_mode="points", width="stretch",
+            )
+            # build_ranking_barras reordena las barras de menor a mayor para
+            # dibujarlas -- el point_index del click cae en ESE orden, no en
+            # el de nombres_mostrar (descendente), así que hay que rearmar la
+            # misma lista ascendente para traducirlo de vuelta al nombre.
+            orden_ranking = sorted(range(len(nombres_mostrar)), key=lambda i: comp_agrupada["curules"].iloc[i])
+            nombres_ranking_orden = [nombres_mostrar[i] for i in orden_ranking]
+            puntos_rank_comp = (
+                evento_rank_comp["selection"]["points"] if evento_rank_comp and evento_rank_comp.get("selection") else []
+            )
+            if puntos_rank_comp:
+                idx = puntos_rank_comp[0].get("point_index")
+                if idx is not None and idx < len(nombres_ranking_orden):
+                    partido_click = nombres_ranking_orden[idx]
+                    if st.session_state.get("_ultimo_click_ranking_comp") != (titulo_hemiciclo, partido_click):
+                        st.session_state["_ultimo_click_ranking_comp"] = (titulo_hemiciclo, partido_click)
+                        st.session_state["partido_actual"] = None if partido_actual == partido_click else partido_click
+                        st.rerun()
             if es_concejo:
                 st.caption(
                     "Fuente: directorios oficiales de cada Concejo y prensa regional -- dato colaborativo, sin una "
