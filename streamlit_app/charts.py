@@ -805,8 +805,18 @@ def build_pastel_municipal(fila, titulo):
     etiquetas = {"actividades_primarias": "Actividades primarias",
                  "actividades_secundarias": "Actividades secundarias",
                  "actividades_terciarias": "Actividades terciarias"}
+    # Mismos colores fijos que ya usa el mapa municipal para "actividad
+    # predominante" -- así el color de cada actividad es consistente entre
+    # el mapa y esta dona (antes la dona usaba los colores automáticos de
+    # build_pastel, que no tenían nada que ver).
+    colores_col = {
+        "actividades_primarias": COLOR_PRIMARIAS,
+        "actividades_secundarias": COLOR_SECUNDARIAS,
+        "actividades_terciarias": COLOR_TERCIARIAS,
+    }
     valores = fila[columnas].dropna() if fila is not None else pd.Series(dtype=float)
-    return build_pastel([etiquetas[c] for c in valores.index], valores.values, titulo)
+    colores = [colores_col[c] for c in valores.index]
+    return build_pastel([etiquetas[c] for c in valores.index], valores.values, titulo, colores=colores)
 
 
 # ------------------------------------------------------------------
