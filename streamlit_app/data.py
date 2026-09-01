@@ -238,6 +238,11 @@ def load_all() -> dict:
     dep["densidad_pob_urbana"] = dep["poblacion_urbana"] / dep["area_km2"]
     dep["log_densidad_urbana"] = np.log10(dep["densidad_pob_urbana"])
 
+    # Densidad de población RURAL -- mismo criterio que la urbana de arriba,
+    # con la población rural como numerador.
+    dep["densidad_pob_rural"] = dep["poblacion_rural"] / dep["area_km2"]
+    dep["log_densidad_rural"] = np.log10(dep["densidad_pob_rural"])
+
     mapa_dep_geo = _load_geojson("departamento.geojson")
     mapa_mun_geo = _load_geojson("municipio.geojson")
 

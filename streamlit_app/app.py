@@ -30,6 +30,7 @@ from charts import (
     build_pyramid,
     build_radar,
     calcular_colores_departamentos_composicion,
+    calcular_colores_departamentos_densidad_rural,
     calcular_colores_departamentos_densidad_urbana,
     calcular_colores_departamentos_ml,
     calcular_colores_departamentos_pib,
@@ -1347,5 +1348,26 @@ else:  # Población
         st.plotly_chart(fig_mapa_urbano, width="stretch")
         st.caption(
             "Color = densidad de población urbana (población urbana ÷ área departamental, escala logarítmica) · "
+            "más oscuro = más denso."
+        )
+
+    # Población rural -- mismo criterio que Población urbana de arriba, en
+    # verde en vez de azul.
+    st.subheader("Población rural", divider="gray")
+
+    colores_rural_dep = calcular_colores_departamentos_densidad_rural(dep, caribe, anio_sel)
+    datos_rural_anio = dep[dep["anio"] == anio_sel].dropna(subset=["densidad_pob_rural"]).set_index("nombre_entidad")
+    hover_rural_dep = {
+        n: f"{datos_rural_anio.loc[n, 'densidad_pob_rural']:,.1f} hab. rurales/km²" for n in datos_rural_anio.index
+    }
+    fig_mapa_rural = build_department_map(
+        mapa_caribe_geo, caribe, nombre_dep, None, colores_rural_dep,
+        todos_activos=modo_total, hover_extra=hover_rural_dep,
+    )
+    col_mapa_rural, _ = st.columns([3, 2])
+    with col_mapa_rural:
+        st.plotly_chart(fig_mapa_rural, width="stretch")
+        st.caption(
+            "Color = densidad de población rural (población rural ÷ área departamental, escala logarítmica) · "
             "más oscuro = más denso."
         )

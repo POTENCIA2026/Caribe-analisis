@@ -179,6 +179,7 @@ COLOR_SECUNDARIAS = "#eb6834"
 COLOR_TERCIARIAS = "#1baf7a"
 COLOR_DENSIDAD = "#0E7C7B"  # azul verdoso
 COLOR_DENSIDAD_URBANA = "#2a78d6"  # azul
+COLOR_DENSIDAD_RURAL = "#2E9E4F"  # verde
 COLOR_COMPETITIVIDAD = "#4a3aa7"
 COLOR_SIN_DATO = "#d9d9d9"
 COLOR_NEUTRO = "#93C5FD"
@@ -387,6 +388,25 @@ def calcular_colores_departamentos_densidad_urbana(dep, caribe, anio_sel):
         valor = datos_anio.loc[nombre_dep, "log_densidad_urbana"]
         t = 0.5 if rango is None else (valor - minimo) / rango
         colores[nombre_dep] = _mezclar_con_blanco(COLOR_DENSIDAD_URBANA, max(0.15, min(1.0, t)))
+    return colores
+
+
+def calcular_colores_departamentos_densidad_rural(dep, caribe, anio_sel):
+    """Igual que calcular_colores_departamentos_densidad_urbana, pero con la
+    densidad de población RURAL (log_densidad_rural) y en verde -- para el
+    mapa de profundización de Población rural."""
+    datos_anio = dep[dep["anio"] == anio_sel].set_index("nombre_entidad")
+    log_densidades = datos_anio["log_densidad_rural"].replace([np.inf, -np.inf], np.nan)
+    minimo, maximo = log_densidades.min(), log_densidades.max()
+    rango = (maximo - minimo) if pd.notna(maximo) and pd.notna(minimo) and maximo > minimo else None
+    colores = {}
+    for nombre_dep in caribe:
+        if nombre_dep not in datos_anio.index or pd.isna(datos_anio.loc[nombre_dep, "log_densidad_rural"]):
+            colores[nombre_dep] = COLOR_SIN_DATO
+            continue
+        valor = datos_anio.loc[nombre_dep, "log_densidad_rural"]
+        t = 0.5 if rango is None else (valor - minimo) / rango
+        colores[nombre_dep] = _mezclar_con_blanco(COLOR_DENSIDAD_RURAL, max(0.15, min(1.0, t)))
     return colores
 
 
