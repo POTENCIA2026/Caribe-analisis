@@ -535,40 +535,60 @@ def build_municipios_map(mapa_geo, colores, nombre_departamento):
     return fig
 
 
-def calcular_colores_municipios_region(mun, mapa_geo, anio_sel, columna_log, color_base):
-    """Un color por municipio (los 193 del Caribe de una vez), según
-    columna_log (ya en log10, ej. "log_densidad_urbana") normalizada entre
-    TODOS ellos -- no por departamento, para que el mapa completo use una
-    sola escala de color. mapa_geo debe venir de geojson_municipios_caribe
-    (trae la propiedad 'clave' que identifica cada municipio sin ambigüedad
-    entre departamentos)."""
+def calcular_colores_municipios_region(mun, mapa_geo, anio_sel, columna, color_base, techo=None):
+    """Un color por municipio (los 193 del Caribe de una vez) según
+    'columna' -- no por departamento, para que el mapa completo use una sola
+    escala de color. mapa_geo debe venir de geojson_municipios_caribe (trae
+    la propiedad 'clave' que identifica cada municipio sin ambigüedad entre
+    departamentos).
+
+    Sin 'techo': normaliza por mínimo/máximo de 'columna' entre los 193
+    municipios -- para una columna ya en log10 (ej. "log_densidad"), que no
+    tiene un techo natural propio. Con 'techo': escala absoluta valor/techo
+    en vez de relativa -- para una tasa/porcentaje que sí tiene uno (ej.
+    "tasa_ruralidad", techo=100), donde comparar contra el 100% dice más que
+    compararla solo contra el resto de municipios del Caribe."""
     claves = [f["properties"]["clave"] for f in mapa_geo["features"]]
     datos_anio = mun[mun["anio"] == anio_sel].copy()
     datos_anio["codigo_corto"] = datos_anio["codigo_dane"].astype(str).str.zfill(5).str[-3:]
     datos_anio["clave"] = datos_anio["nombre_entidad"] + "|" + datos_anio["codigo_corto"]
     datos_anio = datos_anio.set_index("clave")
-    log_densidades = datos_anio[columna_log].replace([np.inf, -np.inf], np.nan)
-    minimo, maximo = log_densidades.min(), log_densidades.max()
-    rango = (maximo - minimo) if pd.notna(maximo) and pd.notna(minimo) and maximo > minimo else None
+    valores = datos_anio[columna].replace([np.inf, -np.inf], np.nan)
+    if techo is None:
+        minimo, maximo = valores.min(), valores.max()
+        rango = (maximo - minimo) if pd.notna(maximo) and pd.notna(minimo) and maximo > minimo else None
     colores = []
     for clave in claves:
-        if clave not in datos_anio.index or pd.isna(datos_anio.loc[clave, columna_log]):
+        if clave not in datos_anio.index or pd.isna(datos_anio.loc[clave, columna]):
             colores.append(COLOR_SIN_DATO)
             continue
-        valor = datos_anio.loc[clave, columna_log]
-        t = 0.5 if rango is None else (valor - minimo) / rango
+        valor = datos_anio.loc[clave, columna]
+        if techo is not None:
+            t = valor / techo
+        else:
+            t = 0.5 if rango is None else (valor - minimo) / rango
         colores.append(_mezclar_con_blanco(color_base, max(0.15, min(1.0, t))))
     return colores
 
 
-def build_municipios_map_region(mapa_geo, colores, mapa_departamentos_geo, titulo):
+def build_municipios_map_region(mapa_geo, colores, mapa_departamentos_geo, titulo, hover_extra=None):
     """Mapa de los 193 municipios del Caribe de una sola vez (a diferencia
     de build_municipios_map, que muestra los de un solo departamento), con
     los bordes departamentales resaltados encima -- mapa_geo debe venir de
-    geojson_municipios_caribe (trae la propiedad 'clave')."""
+    geojson_municipios_caribe (trae la propiedad 'clave'). hover_extra
+    (opcional): {clave: texto} con una línea extra para el tooltip, debajo
+    del nombre del municipio."""
     claves = [f["properties"]["clave"] for f in mapa_geo["features"]]
     nombres_mun = [f["properties"]["nombre_entidad"] for f in mapa_geo["features"]]
     colorscale, z = _construir_colorscale_categorico(colores)
+    if hover_extra:
+        hovertext = [
+            f"<b>{n}</b><br>{hover_extra[c]}" if hover_extra.get(c) else f"<b>{n}</b>"
+            for n, c in zip(nombres_mun, claves)
+        ]
+        hover_kwargs = dict(hovertext=hovertext, hovertemplate="%{hovertext}<extra></extra>")
+    else:
+        hover_kwargs = dict(text=nombres_mun, hovertemplate="<b>%{text}</b><extra></extra>")
     fig = go.Figure(
         go.Choropleth(
             geojson=mapa_geo,
@@ -581,8 +601,7 @@ def build_municipios_map_region(mapa_geo, colores, mapa_departamentos_geo, titul
             showscale=False,
             marker_line_color="white",
             marker_line_width=0.5,
-            text=nombres_mun,
-            hovertemplate="<b>%{text}</b><extra></extra>",
+            **hover_kwargs,
         )
     )
     # Bordes departamentales encima, sin relleno propio (transparente) --
