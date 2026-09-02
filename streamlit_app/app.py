@@ -68,6 +68,7 @@ geih_ocupados_rama = data["geih_ocupados_rama"]
 composicion_asamblea = data["composicion_asamblea"]
 composicion_concejo = data["composicion_concejo"]
 gobernadores_departamentales = data["gobernadores_departamentales"]
+alcaldes_municipales = data["alcaldes_municipales"]
 capitales = data["capitales"]
 pilares_disponibles = data["pilares_disponibles"]
 departamentos_pais = data["departamentos_pais"]
@@ -157,6 +158,27 @@ def _resumen_wikipedia(nombre_busqueda):
         "foto_url": (pagina.get("thumbnail") or {}).get("source"),
         "url": pagina.get("fullurl"),
     }
+
+
+def _tarjeta_funcionario(nombre, descripcion_cargo, partido, periodo):
+    """Tarjeta con foto + resumen de Wikipedia de un funcionario (gobernador
+    o alcalde) -- misma estructura para ambos cargos, ver
+    _resumen_wikipedia."""
+    info_wiki = _resumen_wikipedia(nombre)
+    col_foto, col_texto = st.columns([1, 3])
+    with col_foto:
+        if info_wiki and info_wiki.get("foto_url"):
+            st.image(info_wiki["foto_url"], width=140)
+    with col_texto:
+        st.markdown(f"**{nombre}** — {descripcion_cargo}")
+        st.caption(f"{partido} · {periodo}")
+        if info_wiki:
+            st.write(info_wiki["extracto"])
+            if info_wiki.get("url"):
+                st.caption(f"[Ver artículo completo en Wikipedia]({info_wiki['url']})")
+        else:
+            st.caption("Sin artículo disponible en Wikipedia por ahora (o no se pudo conectar).")
+    st.divider()
 
 
 def _grafico_linea_con_click_anio(fig, key, anios_serie, anio_sel):
@@ -1391,30 +1413,29 @@ elif variable_activa == "Composición Política":
             # El gobernador es una figura departamental -- no tiene sentido
             # en la vista combinada de la Región Caribe (serían 7 personas
             # distintas) ni en un concejo municipal (eso es un alcalde, otro
-            # cargo). Solo se muestra al ver la asamblea de UN departamento.
+            # cargo, ver más abajo). Solo se muestra al ver la asamblea de UN
+            # departamento.
             if not es_concejo and not modo_total:
                 fila_gob = gobernadores_departamentales[
                     gobernadores_departamentales["nombre_departamento"] == nombre_dep
                 ]
                 if not fila_gob.empty:
                     fila_gob = fila_gob.iloc[0]
-                    info_wiki = _resumen_wikipedia(fila_gob["nombre_gobernador"])
-                    col_foto, col_texto = st.columns([1, 3])
-                    with col_foto:
-                        if info_wiki and info_wiki.get("foto_url"):
-                            st.image(info_wiki["foto_url"], width=140)
-                    with col_texto:
-                        st.markdown(f"**{fila_gob['nombre_gobernador']}** — Gobernador(a) de {nombre_dep}")
-                        st.caption(f"{fila_gob['partido']} · {fila_gob['periodo']}")
-                        if info_wiki:
-                            st.write(info_wiki["extracto"])
-                            if info_wiki.get("url"):
-                                st.caption(f"[Ver artículo completo en Wikipedia]({info_wiki['url']})")
-                        else:
-                            st.caption(
-                                "Sin artículo disponible en Wikipedia por ahora (o no se pudo conectar)."
-                            )
-                    st.divider()
+                    _tarjeta_funcionario(
+                        fila_gob["nombre_gobernador"], f"Gobernador(a) de {nombre_dep}",
+                        fila_gob["partido"], fila_gob["periodo"],
+                    )
+            # El alcalde, en cambio, es la figura de UN concejo municipal --
+            # solo aplica a los municipios que ya tienen su concejo
+            # registrado (por ahora, las 7 capitales).
+            if es_concejo:
+                fila_alc = alcaldes_municipales[alcaldes_municipales["nombre_municipio"] == municipio_actual]
+                if not fila_alc.empty:
+                    fila_alc = fila_alc.iloc[0]
+                    _tarjeta_funcionario(
+                        fila_alc["nombre_alcalde"], f"Alcalde(sa) de {municipio_actual}",
+                        fila_alc["partido"], fila_alc["periodo"],
+                    )
             if partido_actual:
                 # Volver a hacer click en la misma barra no siempre dispara
                 # un nuevo evento de selección (Plotly no reenvía un valor

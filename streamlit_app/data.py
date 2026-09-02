@@ -243,6 +243,12 @@ def load_all() -> dict:
     # solo se guarda el nombre para buscarlo.
     gobernadores_departamentales = pd.read_csv(DATA_DIR / "gobernadores_departamentales.csv", sep=";")
 
+    # Alcalde vigente (periodo 2024-2027) de los municipios que ya tienen su
+    # concejo registrado (por ahora, solo las 7 capitales) -- mismo esquema
+    # que gobernadores_departamentales, foto y resumen también en vivo desde
+    # Wikipedia.
+    alcaldes_municipales = pd.read_csv(DATA_DIR / "alcaldes_municipales.csv", sep=";")
+
     for df in (mun, dep):
         df[["poblacion_total", "poblacion_rural", "poblacion_urbana"]] = df[
             ["poblacion_total", "poblacion_rural", "poblacion_urbana"]
@@ -293,6 +299,7 @@ def load_all() -> dict:
         "composicion_asamblea": composicion_asamblea,
         "composicion_concejo": composicion_concejo,
         "gobernadores_departamentales": gobernadores_departamentales,
+        "alcaldes_municipales": alcaldes_municipales,
         "mapa_dep_geo": mapa_dep_geo,
         "mapa_mun_geo": mapa_mun_geo,
         "pilares_disponibles": pilares_disponibles,
