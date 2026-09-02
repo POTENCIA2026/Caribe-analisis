@@ -193,12 +193,17 @@ def _resumen_wikipedia(nombre_busqueda):
 def _tarjeta_funcionario(nombre, descripcion_cargo, partido, periodo):
     """Tarjeta con foto + resumen de Wikipedia de un funcionario (gobernador
     o alcalde) -- misma estructura para ambos cargos, ver
-    _resumen_wikipedia."""
+    _resumen_wikipedia. Foto y texto ocupan cada uno la mitad del ancho
+    disponible -- la misma proporción 1:1 que usan el hemiciclo y el
+    ranking de partidos más abajo, a pedido explícito (antes la foto era
+    chica, en una columna angosta de 1/4)."""
     info_wiki = _resumen_wikipedia(nombre)
-    col_foto, col_texto = st.columns([1, 3])
+    col_foto, col_texto = st.columns(2)
     with col_foto:
         if info_wiki and info_wiki.get("foto_url"):
-            st.image(info_wiki["foto_url"], width=140)
+            st.image(info_wiki["foto_url"], width="stretch")
+        else:
+            st.caption("Sin foto disponible.")
     with col_texto:
         st.markdown(f"**{nombre}** — {descripcion_cargo}")
         st.caption(f"{partido} · {periodo}")
@@ -208,7 +213,35 @@ def _tarjeta_funcionario(nombre, descripcion_cargo, partido, periodo):
                 st.caption(f"[Ver artículo completo en Wikipedia]({info_wiki['url']})")
         else:
             st.caption("Sin artículo disponible en Wikipedia por ahora (o no se pudo conectar).")
-    st.divider()
+
+
+def _seccion_funcionario(personas, columna_nombre, descripcion_cargo, subtitulo):
+    """Sección completa del gobernador/alcalde, con un tab por persona
+    registrada (personas, ya ordenado con la vigente primero) cuando hay
+    más de una -- ej. un gobernador destituido y quien lo reemplazó -- y
+    sin tabs cuando solo hay una, que es el caso normal. "vigente" se
+    etiqueta "Actual"; el resto, "Electo originalmente" para la primera
+    persona (orden mínimo) y su propio período para cualquier otra
+    intermedia (poco común, pero por si en algún momento hay más de dos)."""
+    if personas.empty:
+        return
+    st.subheader(subtitulo)
+    filas = list(personas.itertuples(index=False))
+    orden_minimo = min(fila.orden for fila in filas)
+
+    def _mostrar(fila):
+        _tarjeta_funcionario(getattr(fila, columna_nombre), descripcion_cargo, fila.partido, fila.periodo)
+
+    if len(filas) == 1:
+        _mostrar(filas[0])
+    else:
+        etiquetas = [
+            "Actual" if fila.vigente else ("Electo originalmente" if fila.orden == orden_minimo else fila.periodo)
+            for fila in filas
+        ]
+        for tab, fila in zip(st.tabs(etiquetas), filas):
+            with tab:
+                _mostrar(fila)
 
 
 def _grafico_linea_con_click_anio(fig, key, anios_serie, anio_sel):
@@ -1439,33 +1472,35 @@ elif variable_activa == "Composición Política":
             st.session_state["partido_actual"] = None
         opacidades_wedge = [1.0 if n == partido_actual else 0.15 for n in nombres_mostrar] if partido_actual else None
 
-        with col_izq:
-            # El gobernador es una figura departamental -- no tiene sentido
-            # en la vista combinada de la Región Caribe (serían 7 personas
-            # distintas) ni en un concejo municipal (eso es un alcalde, otro
-            # cargo, ver más abajo). Solo se muestra al ver la asamblea de UN
-            # departamento.
-            if not es_concejo and not modo_total:
-                fila_gob = gobernadores_departamentales[
-                    gobernadores_departamentales["nombre_departamento"] == nombre_dep
-                ]
-                if not fila_gob.empty:
-                    fila_gob = fila_gob.iloc[0]
-                    _tarjeta_funcionario(
-                        fila_gob["nombre_gobernador"], f"Gobernador(a) de {nombre_dep}",
-                        fila_gob["partido"], fila_gob["periodo"],
-                    )
-            # El alcalde, en cambio, es la figura de UN concejo municipal --
-            # solo aplica a los municipios que ya tienen su concejo
-            # registrado (por ahora, las 7 capitales).
-            if es_concejo:
-                fila_alc = alcaldes_municipales[alcaldes_municipales["nombre_municipio"] == municipio_actual]
-                if not fila_alc.empty:
-                    fila_alc = fila_alc.iloc[0]
-                    _tarjeta_funcionario(
-                        fila_alc["nombre_alcalde"], f"Alcalde(sa) de {municipio_actual}",
-                        fila_alc["partido"], fila_alc["periodo"],
-                    )
+        # El gobernador es una figura departamental -- no tiene sentido en la
+        # vista combinada de la Región Caribe (serían 7 personas distintas)
+        # ni en un concejo municipal (eso es un alcalde, otro cargo). El
+        # alcalde, al revés, solo aplica a los municipios que ya tienen su
+        # concejo registrado (por ahora, las 7 capitales). Ambos van con un
+        # tab por persona cuando hay más de una registrada (ej. un
+        # gobernador destituido y quien lo reemplazó, ver
+        # gobernadores_departamentales.csv) -- la vigente siempre va primero
+        # (el tab que se ve por defecto).
+        if es_concejo:
+            personas = alcaldes_municipales[
+                alcaldes_municipales["nombre_municipio"] == municipio_actual
+            ].sort_values(["vigente", "orden"], ascending=[False, True])
+            _seccion_funcionario(personas, "nombre_alcalde", f"Alcalde(sa) de {municipio_actual}", "Alcalde")
+        elif not modo_total:
+            personas = gobernadores_departamentales[
+                gobernadores_departamentales["nombre_departamento"] == nombre_dep
+            ].sort_values(["vigente", "orden"], ascending=[False, True])
+            _seccion_funcionario(personas, "nombre_gobernador", f"Gobernador(a) de {nombre_dep}", "Gobernador")
+
+        st.subheader("Concejo" if es_concejo else "Asamblea")
+        # Columnas propias (no las col_izq/col_der de toda la página) --
+        # esas quedaron fijas arriba de todo desde que se crearon al
+        # principio del script, así que cualquier cosa escrita ahí
+        # aparecería ANTES de "Gobernador"/"Alcalde" sin importar en qué
+        # orden esté el código. Con un par nuevo, creado justo acá, el
+        # orden en el código es el orden en la página.
+        col_asamblea_izq, col_asamblea_der = st.columns(2)
+        with col_asamblea_izq:
             if partido_actual:
                 # Volver a hacer click en la misma barra no siempre dispara
                 # un nuevo evento de selección (Plotly no reenvía un valor
@@ -1492,7 +1527,7 @@ elif variable_activa == "Composición Política":
                     "(rojo liberal, azul conservador, etc.); coaliciones y movimientos regionales llevan un color "
                     "asignado automáticamente solo para distinguirlos entre sí."
                 )
-        with col_der:
+        with col_asamblea_der:
             fig_rank_partidos = build_ranking_barras(
                 nombres_mostrar, comp_agrupada["curules"],
                 f"Curules por partido — {titulo_hemiciclo}", colores=colores_wedge, unidad="curules",
