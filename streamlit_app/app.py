@@ -3,6 +3,8 @@
 Ejecutar con:  streamlit run streamlit_app/app.py
 """
 import json
+import re
+import unicodedata
 import urllib.parse
 import urllib.request
 
@@ -117,12 +119,37 @@ def _diferir_rerun():
     st.session_state["_rerun_diferido"] = True
 
 
+def _tokens_nombre(nombre):
+    """Palabras del nombre, en minúsculas y sin tildes -- para comparar
+    nombres sin que "Kerguelén" y "Kerguelen" o "ORO" y "oro" cuenten como
+    distintos."""
+    sin_tildes = unicodedata.normalize("NFKD", nombre).encode("ascii", "ignore").decode()
+    return set(re.findall(r"[a-z]+", sin_tildes.lower()))
+
+
+def _coincide_nombre(nombre_busqueda, titulo_resultado):
+    """Chequeo de sanidad sobre el resultado de la búsqueda: exige al menos
+    2 palabras en común (o todas, si el nombre buscado tiene menos de 2).
+
+    La búsqueda de Wikipedia (ver _resumen_wikipedia) no siempre encuentra
+    el artículo de la persona exacta -- si no tiene uno propio, puede
+    devolver el de alguien más solo porque comparten un apellido común
+    (ej. buscar "Ernesto Miguel Orozco Durán", que no tiene artículo
+    propio, devolvía el de "José Clemente Ángel Orozco" con quien solo
+    comparte "Orozco"). Sin este chequeo se mostraría la foto y biografía
+    de la persona equivocada en vez de decir que no hay artículo."""
+    tokens_busqueda = _tokens_nombre(nombre_busqueda)
+    tokens_resultado = _tokens_nombre(titulo_resultado)
+    minimo = min(2, len(tokens_busqueda))
+    return len(tokens_busqueda & tokens_resultado) >= minimo
+
+
 @st.cache_data(ttl=60 * 60 * 24, show_spinner=False)
 def _resumen_wikipedia(nombre_busqueda):
     """Busca en Wikipedia (es) el artículo que mejor calce con nombre_busqueda
     y devuelve su introducción -- el texto ANTES del primer subtítulo -- junto
-    con la miniatura de su foto, o None si no hay artículo o falla la
-    conexión.
+    con la miniatura de su foto, o None si no hay artículo, el resultado no
+    parece ser el de esa persona (ver _coincide_nombre) o falla la conexión.
 
     Se usa "generator=search" en vez de pedir el título exacto porque el
     nombre completo de una persona (ej. "Yamil Hernando Arana Padauí") casi
@@ -149,11 +176,14 @@ def _resumen_wikipedia(nombre_busqueda):
     if not paginas:
         return None
     pagina = next(iter(paginas.values()))
+    titulo = pagina.get("title") or ""
+    if not _coincide_nombre(nombre_busqueda, titulo):
+        return None
     extracto = (pagina.get("extract") or "").strip()
     if not extracto:
         return None
     return {
-        "titulo": pagina.get("title"),
+        "titulo": titulo,
         "extracto": extracto,
         "foto_url": (pagina.get("thumbnail") or {}).get("source"),
         "url": pagina.get("fullurl"),
