@@ -236,6 +236,13 @@ def load_all() -> dict:
     # una base centralizada única; contrastar antes de un uso oficial.
     composicion_concejo = pd.read_csv(DATA_DIR / "composicion_concejo_municipal.csv", sep=";")
 
+    # Gobernador vigente de cada departamento (periodo 2024-2027) -- dato
+    # colaborativo, contrastar con la gobernación respectiva si se necesita
+    # exactitud certificada. La foto y el resumen de cada uno se traen en
+    # vivo desde la API de Wikipedia (ver _resumen_wikipedia en app.py), acá
+    # solo se guarda el nombre para buscarlo.
+    gobernadores_departamentales = pd.read_csv(DATA_DIR / "gobernadores_departamentales.csv", sep=";")
+
     for df in (mun, dep):
         df[["poblacion_total", "poblacion_rural", "poblacion_urbana"]] = df[
             ["poblacion_total", "poblacion_rural", "poblacion_urbana"]
@@ -285,6 +292,7 @@ def load_all() -> dict:
         "geih_ocupados_rama": geih_ocupados_rama,
         "composicion_asamblea": composicion_asamblea,
         "composicion_concejo": composicion_concejo,
+        "gobernadores_departamentales": gobernadores_departamentales,
         "mapa_dep_geo": mapa_dep_geo,
         "mapa_mun_geo": mapa_mun_geo,
         "pilares_disponibles": pilares_disponibles,
