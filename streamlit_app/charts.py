@@ -1050,17 +1050,23 @@ def _filas_hemiciclo(n_puntos, radio_inicial=1.5, espacio_filas=0.55):
     return radios[-1], filas_datos
 
 
-def build_hemiciclo(partidos, curules, colores, titulo, subtitulo=None, opacidades=None):
+def build_hemiciclo(partidos, curules, colores, titulo, subtitulo=None, opacidades=None, detalle_curules=None):
     """partidos/curules/colores van en el mismo orden -- ese orden es el que
     define qué bloque queda más a la izquierda (deben venir ya ordenados de
     mayor a menor número de curules, como en los diagramas de parlamento
     reales). opacidades (opcional, mismo orden): para resaltar un partido al
     hacer click en el ranking de al lado -- 1.0 el elegido, un valor bajo el
-    resto."""
+    resto. detalle_curules (opcional, mismo orden que partidos): cuando un
+    partido agrupa curules de varias entidades (p. ej. "Asambleas de la
+    Región Caribe combinadas", donde cada curul es en realidad de un
+    departamento distinto), una lista de (nombre_entidad, cantidad) por
+    partido -- así cada punto puede decir de dónde es al pasar el mouse,
+    en vez de ser indistinguible del resto de curules del mismo partido."""
     partidos = list(partidos)
     curules = [int(c) for c in curules]
     colores = list(colores)
     opacidades = list(opacidades) if opacidades is not None else None
+    detalle_curules = list(detalle_curules) if detalle_curules is not None else None
     # Filtrar partidos sin curules para no complicar el reparto de abajo.
     _pos = [i for i, c in enumerate(curules) if c > 0]
     partidos = [partidos[i] for i in _pos]
@@ -1068,6 +1074,8 @@ def build_hemiciclo(partidos, curules, colores, titulo, subtitulo=None, opacidad
     colores = [colores[i] for i in _pos]
     if opacidades is not None:
         opacidades = [opacidades[i] for i in _pos]
+    if detalle_curules is not None:
+        detalle_curules = [detalle_curules[i] for i in _pos]
     total = sum(curules)
 
     if total <= 0:
@@ -1090,17 +1098,34 @@ def build_hemiciclo(partidos, curules, colores, titulo, subtitulo=None, opacidad
     xs, ys, colores_punto, opacidades_punto, texto = [], [], [], [], []
     idx_partido = 0
     restantes = curules[0]
+    # Saldo de entidades por consumir para el partido actual (ver
+    # detalle_curules arriba) -- se reinicia cada vez que el reparto pasa
+    # al siguiente partido, igual que "restantes".
+    detalle_restante = list(detalle_curules[0]) if detalle_curules is not None else None
     for angulo, radio in puntos:
         while restantes == 0:
             idx_partido += 1
             restantes = curules[idx_partido]
+            if detalle_curules is not None:
+                detalle_restante = list(detalle_curules[idx_partido])
         x, y = radio * math.cos(angulo), radio * math.sin(angulo)
         xs.append(x)
         ys.append(y)
         colores_punto.append(colores[idx_partido])
         opacidades_punto.append(opacidades[idx_partido] if opacidades is not None else 1.0)
         n = curules[idx_partido]
-        texto.append(f"<b>{partidos[idx_partido]}</b><br>{n} curul{'es' if n != 1 else ''}")
+        etiqueta = f"<b>{partidos[idx_partido]}</b><br>{n} curul{'es' if n != 1 else ''}"
+        if detalle_restante:
+            # Cada punto se lleva un cupo de la primera entidad con saldo --
+            # así los puntos de una misma entidad quedan contiguos dentro
+            # del bloque del partido, igual que el reparto de partidos.
+            nombre_entidad_punto, cupo = detalle_restante[0]
+            etiqueta += f"<br>{nombre_entidad_punto}"
+            if cupo > 1:
+                detalle_restante[0] = (nombre_entidad_punto, cupo - 1)
+            else:
+                detalle_restante.pop(0)
+        texto.append(etiqueta)
         restantes -= 1
 
     fig = go.Figure(
