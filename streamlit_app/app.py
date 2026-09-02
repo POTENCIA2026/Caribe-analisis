@@ -94,6 +94,23 @@ def _init_estado():
         st.session_state.setdefault(k, v)
 
 
+def _diferir_rerun():
+    """Pide un rerun, pero sin cortar el script ya mismo -- se dispara recién
+    al final (ver el chequeo al final de este archivo), después de que TODOS
+    los widgets de la página se hayan instanciado en esta misma corrida.
+
+    Si en cambio se llama st.rerun() directo -- lo que hacía este archivo
+    antes -- desde un click ubicado en la mitad del script (ej. un punto de
+    una serie de tiempo, o una porción de una dona), la corrida se corta ahí
+    mismo y ningún widget MÁS ABAJO (ej. el checkbox "Incluir el resto de
+    Colombia") llega a instanciarse en esta pasada. Streamlit, al no verlo
+    renderizado, le borra el valor a ese widget -- y se veía marcado en
+    pantalla pero volvía a leerse desmarcado en la siguiente corrida. Todo
+    click que necesite un rerun pasa por acá en vez de llamar st.rerun()
+    directo, precisamente para evitar ese problema."""
+    st.session_state["_rerun_diferido"] = True
+
+
 def _grafico_linea_con_click_anio(fig, key, anios_serie, anio_sel):
     """Muestra un gráfico de línea con click-para-saltar-de-año: clickear un
     punto mueve el slider de Año a ese punto. Reutilizado por todas las
@@ -109,7 +126,7 @@ def _grafico_linea_con_click_anio(fig, key, anios_serie, anio_sel):
             anio_click = int(anios_serie[idx])
             if anio_click != anio_sel:
                 st.session_state["anio_click_pendiente"] = anio_click
-                st.rerun()
+                _diferir_rerun()
 
 
 def _procesar_click(evento, nombres, key_ultimo):
@@ -234,7 +251,7 @@ with col_mapa:
                 st.session_state["sector_actual_ml"] = None
                 st.session_state["partido_actual"] = None
                 st.session_state["modo_total"] = False
-                st.rerun()
+                _diferir_rerun()
         else:
             mapa_mun_geo = geojson_municipios_de(data["mapa_mun_geo"], mun, st.session_state["departamento_actual"])
             colores, nombres_mun = calcular_colores_municipios(
@@ -250,7 +267,7 @@ with col_mapa:
                 st.session_state["actividad_actual_mun"] = None
                 st.session_state["sector_actual_ml"] = None
                 st.session_state["partido_actual"] = None
-                st.rerun()
+                _diferir_rerun()
 
             # leyenda del mapa municipal
             if st.session_state["variable_activa"] == "PIB":
@@ -283,7 +300,7 @@ with col_mapa:
             st.session_state["partido_actual"] = None
             st.session_state["comparar_con"] = "Ninguno"
             st.session_state["modo_total"] = False
-            st.rerun()
+            _diferir_rerun()
 
     # Lista clickeable -- la misma selección que se hace tocando el mapa,
     # pero como botones normales (sin desplegable) para quien prefiera
@@ -304,7 +321,7 @@ with col_mapa:
                     st.session_state["actividad_actual_mun"] = None
                     st.session_state["sector_actual_ml"] = None
                     st.session_state["partido_actual"] = None
-                    st.rerun()
+                    _diferir_rerun()
             for nombre in sorted(caribe):
                 activo = nombre == st.session_state["departamento_actual"] and not activo_total
                 if st.button(nombre, key=f"btn_dep_{nombre}", type="primary" if activo else "secondary", width="stretch"):
@@ -317,7 +334,7 @@ with col_mapa:
                         st.session_state["sector_actual_ml"] = None
                         st.session_state["partido_actual"] = None
                         st.session_state["modo_total"] = False
-                        st.rerun()
+                        _diferir_rerun()
         else:
             dep_lista = st.session_state["departamento_actual"]
             nombres_mun_lista = sorted(mun[mun["nombre_departamento"] == dep_lista]["nombre_entidad"].unique())
@@ -332,7 +349,7 @@ with col_mapa:
                             st.session_state["actividad_actual_mun"] = None
                             st.session_state["sector_actual_ml"] = None
                             st.session_state["partido_actual"] = None
-                            st.rerun()
+                            _diferir_rerun()
 
 # ------------------------------------------------------------------
 # TARJETAS (Población / PIB / Competitividad / Municipios)
@@ -447,19 +464,19 @@ def _tarjeta(col, etiqueta, valor, activa, key):
 
 if _tarjeta(c1, "Población", poblacion_fmt, st.session_state["variable_activa"] == "Población", "tab_poblacion"):
     st.session_state["variable_activa"] = "Población"
-    st.rerun()
+    _diferir_rerun()
 if _tarjeta(c2, "PIB", pib_fmt, st.session_state["variable_activa"] == "PIB", "tab_pib"):
     st.session_state["variable_activa"] = "PIB"
-    st.rerun()
+    _diferir_rerun()
 if _tarjeta(c3, "Competitividad", competitividad_fmt, st.session_state["variable_activa"] == "Competitividad", "tab_competitividad"):
     st.session_state["variable_activa"] = "Competitividad"
-    st.rerun()
+    _diferir_rerun()
 if _tarjeta(c4, "Mercado laboral", mercado_laboral_fmt, st.session_state["variable_activa"] == "Mercado laboral", "tab_mercado_laboral"):
     st.session_state["variable_activa"] = "Mercado laboral"
-    st.rerun()
+    _diferir_rerun()
 if _tarjeta(c5, "Composición Política", composicion_fmt, st.session_state["variable_activa"] == "Composición Política", "tab_composicion_politica"):
     st.session_state["variable_activa"] = "Composición Política"
-    st.rerun()
+    _diferir_rerun()
 with c6:
     st.button(f"Municipios\n{municipios_fmt}", disabled=True, width="stretch")
 
@@ -530,11 +547,11 @@ elif variable_activa == "PIB":
             # idéntico al anterior) -- este botón siempre funciona.
             if st.button(f"✕ Quitar {st.session_state['sector_actual']['nombre']}", key="quitar_sector"):
                 st.session_state["sector_actual"] = None
-                st.rerun()
+                _diferir_rerun()
         if municipio_actual and st.session_state.get("actividad_actual_mun"):
             if st.button(f"✕ Quitar {st.session_state['actividad_actual_mun']['nombre']}", key="quitar_actividad_mun"):
                 st.session_state["actividad_actual_mun"] = None
-                st.rerun()
+                _diferir_rerun()
     with col_der:
         slot_der = st.empty()
         if modo_linea == "Per cápita":
@@ -694,7 +711,7 @@ elif variable_activa == "PIB":
                                 st.session_state["sector_actual"] = None
                             else:
                                 st.session_state["sector_actual"] = {"nombre": sector_click, "color": color_click}
-                            st.rerun()
+                            _diferir_rerun()
             elif municipio_actual:
                 fila_mun_anio = mun[
                     (mun["nombre_entidad"] == municipio_actual)
@@ -740,7 +757,7 @@ elif variable_activa == "PIB":
                                         "nombre": etiquetas_actividad_mun[columna_click],
                                         "color": color_click,
                                     }
-                                st.rerun()
+                                _diferir_rerun()
             else:
                 datos = pib_sector_caribe[
                     (pib_sector_caribe["Departamento"] == nombre_dep) & (pib_sector_caribe["Año"] == anio_sel)
@@ -780,7 +797,7 @@ elif variable_activa == "PIB":
                                 st.session_state["sector_actual"] = None
                             else:
                                 st.session_state["sector_actual"] = {"nombre": sector_click, "color": color_click}
-                            st.rerun()
+                            _diferir_rerun()
 
         else:  # Regional / Nacional -- participación dentro de un universo mayor
             valor_caribe = dep[dep["anio"] == anio_sel]["pib"].sum()
@@ -927,7 +944,7 @@ elif variable_activa == "Mercado laboral":
                 if st.button(f"✕ Quitar {st.session_state['sector_actual_ml']['nombre']}", key="quitar_sector_ml"):
                     st.session_state["sector_actual_ml"] = None
                     st.session_state["partido_actual"] = None
-                    st.rerun()
+                    _diferir_rerun()
 
     if modo_total:
         # Vista Total: se agregan las 7 ciudades capitales (la GEIH no cubre
@@ -1048,7 +1065,7 @@ elif variable_activa == "Mercado laboral":
                                     st.session_state["sector_actual_ml"] = {
                                         "nombre": rama_click, "color": COLOR_RAMA_GEIH.get(rama_click, "#cccccc"),
                                     }
-                                st.rerun()
+                                _diferir_rerun()
                     st.caption(
                         f"PIB del sector en los 7 departamentos ÷ ocupados en esa rama en las 7 capitales, "
                         f"para {anio_sel} -- mezcla dos niveles geográficos distintos, es una aproximación."
@@ -1196,7 +1213,7 @@ elif variable_activa == "Mercado laboral":
                                     st.session_state["sector_actual_ml"] = {
                                         "nombre": rama_click, "color": COLOR_RAMA_GEIH.get(rama_click, "#cccccc"),
                                     }
-                                st.rerun()
+                                _diferir_rerun()
                     st.caption(
                         f"PIB del sector en {nombre_dep} (departamento) ÷ ocupados en esa rama en {ciudad_ml} "
                         f"(solo la capital), para {anio_sel} -- mezcla dos niveles geográficos distintos, es "
@@ -1291,7 +1308,7 @@ elif variable_activa == "Composición Política":
                 # idéntico al anterior) -- este botón siempre funciona.
                 if st.button(f"✕ Quitar {partido_actual}", key="quitar_partido"):
                     st.session_state["partido_actual"] = None
-                    st.rerun()
+                    _diferir_rerun()
             fig_hemiciclo = build_hemiciclo(
                 nombres_mostrar, comp_agrupada["curules"], colores_wedge, titulo_hemiciclo,
                 subtitulo=f"Período {PERIODO_ASAMBLEA_VIGENTE} · {int(comp_agrupada['curules'].sum())} curules",
@@ -1336,7 +1353,7 @@ elif variable_activa == "Composición Política":
                     if st.session_state.get("_ultimo_click_ranking_comp") != (titulo_hemiciclo, partido_click):
                         st.session_state["_ultimo_click_ranking_comp"] = (titulo_hemiciclo, partido_click)
                         st.session_state["partido_actual"] = None if partido_actual == partido_click else partido_click
-                        st.rerun()
+                        _diferir_rerun()
             if es_concejo:
                 st.caption(
                     "Fuente: directorios oficiales de cada Concejo y prensa regional -- dato colaborativo, sin una "
@@ -1531,3 +1548,10 @@ else:  # Población
             "Color = tasa de ruralidad por municipio (población rural ÷ población total, %) · más oscuro = más "
             "rural · líneas gruesas = límites departamentales."
         )
+
+# El rerun pedido por cualquier click de la página (ver _diferir_rerun) se
+# dispara acá, al final -- así todos los widgets de la corrida actual ya se
+# instanciaron (nada de Session State se pierde) antes de saltar a la
+# siguiente.
+if st.session_state.pop("_rerun_diferido", False):
+    st.rerun()
