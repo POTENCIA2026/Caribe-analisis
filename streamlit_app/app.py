@@ -193,12 +193,11 @@ def _resumen_wikipedia(nombre_busqueda):
 def _tarjeta_funcionario(nombre, descripcion_cargo, partido, periodo):
     """Tarjeta con foto + resumen de Wikipedia de un funcionario (gobernador
     o alcalde) -- misma estructura para ambos cargos, ver
-    _resumen_wikipedia. Foto y texto ocupan cada uno la mitad del ancho
-    disponible -- la misma proporción 1:1 que usan el hemiciclo y el
-    ranking de partidos más abajo, a pedido explícito (antes la foto era
-    chica, en una columna angosta de 1/4)."""
+    _resumen_wikipedia. La foto ocupa 1/4 del ancho disponible (texto 3/4)
+    -- la mitad de la proporción 1:1 que se probó primero (foto de la
+    mitad del ancho resultaba demasiado grande)."""
     info_wiki = _resumen_wikipedia(nombre)
-    col_foto, col_texto = st.columns(2)
+    col_foto, col_texto = st.columns([1, 3])
     with col_foto:
         if info_wiki and info_wiki.get("foto_url"):
             st.image(info_wiki["foto_url"], width="stretch")
