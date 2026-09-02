@@ -1231,6 +1231,13 @@ elif variable_activa == "Composición Política":
         comp = comp_vigente[comp_vigente["nombre_departamento"].isin(caribe)]
         comp_agrupada = comp.groupby(["partido", "partido_normalizado"], as_index=False)["curules"].sum()
         titulo_hemiciclo = "Asambleas de la Región Caribe (combinadas)"
+        # Detalle por departamento de cada partido -- acá cada curul es en
+        # realidad de una asamblea distinta, así que el hemiciclo lo
+        # necesita para decir de qué departamento es cada punto al pasar
+        # el mouse (ver detalle_curules más abajo y en build_hemiciclo).
+        detalle_dep_partido = comp.groupby(
+            ["partido", "partido_normalizado", "nombre_departamento"], as_index=False
+        )["curules"].sum()
     else:
         comp_agrupada = comp_vigente[comp_vigente["nombre_departamento"] == nombre_dep][
             ["partido", "partido_normalizado", "curules"]
@@ -1255,6 +1262,20 @@ elif variable_activa == "Composición Política":
             normalizado if normalizado != NOMBRE_OTROS_PARTIDOS else nombre_legible_partido(raw)
             for raw, normalizado in zip(comp_agrupada["partido"], comp_agrupada["partido_normalizado"])
         ]
+        # Detalle departamental por partido, en el mismo orden que
+        # nombres_mostrar -- solo existe en la vista combinada (ver
+        # detalle_dep_partido más arriba); en las demás vistas cada curul
+        # ya es inequívocamente de la única entidad que se está mostrando.
+        detalle_curules = None
+        if modo_total:
+            detalle_curules = [
+                list(
+                    detalle_dep_partido[
+                        (detalle_dep_partido["partido"] == partido) & (detalle_dep_partido["partido_normalizado"] == normalizado)
+                    ][["nombre_departamento", "curules"]].itertuples(index=False, name=None)
+                )
+                for partido, normalizado in zip(comp_agrupada["partido"], comp_agrupada["partido_normalizado"])
+            ]
         partido_actual = st.session_state.get("partido_actual")
         if partido_actual not in nombres_mostrar:
             # Cambió de selección (departamento/municipio) o el partido ya no
@@ -1274,7 +1295,7 @@ elif variable_activa == "Composición Política":
             fig_hemiciclo = build_hemiciclo(
                 nombres_mostrar, comp_agrupada["curules"], colores_wedge, titulo_hemiciclo,
                 subtitulo=f"Período {PERIODO_ASAMBLEA_VIGENTE} · {int(comp_agrupada['curules'].sum())} curules",
-                opacidades=opacidades_wedge,
+                opacidades=opacidades_wedge, detalle_curules=detalle_curules,
             )
             st.plotly_chart(fig_hemiciclo, width="stretch")
             if es_concejo:
