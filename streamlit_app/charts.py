@@ -928,16 +928,23 @@ NOMBRES_DEPARTAMENTO_CORTOS = {
 # ------------------------------------------------------------------
 def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_titulo, color="#2a78d6",
                                  capitales=None, promedios_departamento=None, promedio_regional=None,
-                                 etiqueta_promedio="Promedio Región Caribe"):
+                                 etiqueta_promedio="Promedio Región Caribe", rango_x=None):
     departamentos = [NOMBRES_DEPARTAMENTO_CORTOS.get(d, d) for d in departamentos]
     municipios = list(municipios)
     valores = [float(v) for v in valores]
     orden = sorted(set(departamentos))
     hovertext = [f"<b>{m}</b><br>{d}<br>${v:,.0f}<extra></extra>" for d, m, v in zip(departamentos, municipios, valores)]
+    # Un id único por municipio (departamento+nombre, porque hay municipios
+    # homónimos en distintos departamentos). Al cambiar de año, Streamlit le
+    # entrega a Plotly los mismos datos con valores nuevos -- con "ids"
+    # Plotly reconoce que es EL MISMO punto (aunque cambie de posición en la
+    # lista, por ejemplo si a un municipio le falta el dato ese año) y lo
+    # desliza a su nueva posición en vez de solo sustituirlo.
+    ids_municipios = [f"{d}|{m}" for d, m in zip(departamentos, municipios)]
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=valores, y=departamentos, mode="markers",
+        x=valores, y=departamentos, mode="markers", ids=ids_municipios,
         # "color" puede ser un solo color (todos los puntos iguales) o una
         # lista con un color por punto -- Plotly acepta ambos tal cual.
         marker=dict(size=10, color=color, opacity=0.75, line=dict(width=1, color="white")),
@@ -952,6 +959,7 @@ def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_ti
             fig.add_trace(go.Scatter(
                 x=[valores[i] for i in idx_cap], y=[departamentos[i] for i in idx_cap],
                 mode="markers", marker=dict(size=4, color="#111827"),
+                ids=[ids_municipios[i] for i in idx_cap],
                 hovertext=[f"<b>{municipios[i]}</b> (capital)<br>{departamentos[i]}<br>${valores[i]:,.0f}" for i in idx_cap],
                 hovertemplate="%{hovertext}<extra></extra>", name="Capital",
             ))
@@ -963,7 +971,7 @@ def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_ti
         deps_p = [d for d in orden if d in promedios_departamento]
         vals_p = [promedios_departamento[d] for d in deps_p]
         fig.add_trace(go.Scatter(
-            x=vals_p, y=deps_p, mode="markers",
+            x=vals_p, y=deps_p, mode="markers", ids=deps_p,
             marker=dict(size=12, color="#eb6834", symbol="square", line=dict(width=1, color="white")),
             hovertemplate="<b>%{y}</b><br>Promedio departamental<br>$%{x:,.0f}<extra></extra>",
             name="Promedio departamental",
@@ -984,9 +992,21 @@ def build_dispersion_municipios(departamentos, municipios, valores, titulo, x_ti
         # "incluir el resto de Colombia". Con un margen fijo, las proporciones
         # se mantienen iguales sin importar qué departamentos estén.
         margin=dict(l=170, r=20, t=50, b=40),
-        xaxis=dict(title=x_titulo),
+        # Rango fijo (calculado afuera con el máximo de TODOS los años, no
+        # solo el año activo) en vez de autorange -- si el eje se reajusta
+        # en cada cambio de año, la animación se ve como si el gráfico
+        # entero se "estirara" (Plotly anima el relayout del eje con un
+        # scale() temporal) en vez de que cada punto se deslice sobre una
+        # misma regla fija, que es el efecto que se busca.
+        xaxis=dict(title=x_titulo, range=rango_x, autorange=rango_x is None),
         yaxis=dict(categoryorder="array", categoryarray=orden, autorange="reversed", automargin=False),
         legend=dict(orientation="h", y=-0.1),
+        # Streamlit actualiza este mismo gráfico con Plotly.react() en cada
+        # rerun (cambiar de año no lo vuelve a crear desde cero) -- con
+        # "transition" configurado, ese react() desliza cada punto (booleano
+        # por su "id", ver arriba) a su nueva posición en vez de saltar
+        # directo, incluida la escala del eje X si el rango cambia.
+        transition=dict(duration=700, easing="cubic-in-out"),
     )
     return fig
 

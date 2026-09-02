@@ -906,14 +906,39 @@ elif variable_activa == "PIB":
                 ]
             else:
                 color_disp = "#2a78d6"
+            # Rango fijo del eje X calculado sobre TODOS los años (no solo
+            # anio_sel) -- si el eje se reajustara con cada año, la
+            # animación de "deslizar" (ver build_dispersion_municipios) se
+            # vería como si el gráfico entero se estirara en vez de que
+            # cada punto se mueva sobre una misma regla fija.
+            pib_percapita_historico = base_mun_disp[["poblacion_total", "valor_agregado"]].dropna()
+            pib_percapita_historico = pib_percapita_historico[pib_percapita_historico["poblacion_total"] > 0]
+            maximo_historico = (
+                (pib_percapita_historico["valor_agregado"] / pib_percapita_historico["poblacion_total"]).max()
+                if not pib_percapita_historico.empty else None
+            )
+            rango_x_disp = (0, maximo_historico * 1.05) if maximo_historico else None
             fig_disp = build_dispersion_municipios(
                 datos_disp["nombre_departamento"], datos_disp["nombre_entidad"], datos_disp["pib_percapita"],
                 f"PIB per cápita municipal — {ambito_disp} ({anio_sel})", "PIB per cápita (COP)",
                 color=color_disp,
                 capitales=capitales, promedios_departamento=promedios_departamento, promedio_regional=promedio_regional,
-                etiqueta_promedio=etiqueta_promedio_disp,
+                etiqueta_promedio=etiqueta_promedio_disp, rango_x=rango_x_disp,
             )
-            st.plotly_chart(fig_disp, width="stretch")
+            # st.plotly_chart nativo desmonta y vuelve a montar el gráfico
+            # entero en cada rerun (aunque se le dé un key fijo) -- eso
+            # deja a Plotly sin nada que interpolar, así que la animación
+            # de "transition" (ver build_dispersion_municipios) nunca se
+            # ve. plotly_events, en cambio, vive en un iframe de componente
+            # que Streamlit SÍ mantiene entre reruns y solo le pasa los
+            # datos nuevos -- eso permite que Plotly.react() deslice los
+            # puntos en vez de solo redibujarlos. Se usa aquí sin ningún
+            # evento habilitado, solo por esa persistencia.
+            altura_disp = max(560, 110 + 75 * datos_disp["nombre_departamento"].nunique())
+            plotly_events(
+                fig_disp, click_event=False, select_event=False, hover_event=False,
+                override_height=altura_disp, override_width="100%", key="grafico_dispersion_pib_percapita",
+            )
             aviso_colores = (
                 " Verde = departamentos de la Región Caribe · amarillo = el departamento activo en el mapa."
                 if incluir_nacional else ""
