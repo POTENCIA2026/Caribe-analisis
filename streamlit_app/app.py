@@ -719,11 +719,18 @@ elif variable_activa == "PIB":
             else:
                 etiquetas_rank = dep_anio_rank["nombre_entidad"].tolist()
                 valores_rank = (dep_anio_rank["pib"] / dep_anio_rank["poblacion_total"]).tolist()
+                # Mismo amarillo "#f5c518" que usa el spread de PIB per
+                # cápita para marcar el departamento activo en el mapa --
+                # antes solo se distinguía con un borde negro, ahora
+                # también se rellena de amarillo, igual que allá.
+                seleccionado_rank = None if modo_total else nombre_dep
+                colores_rank_dep = [
+                    "#f5c518" if e == seleccionado_rank else "#2a78d6" for e in etiquetas_rank
+                ]
                 fig_rank_dep = build_ranking_barras(
                     etiquetas_rank, valores_rank,
                     f"PIB per cápita por departamento — Región Caribe ({anio_sel})",
-                    colores=["#2a78d6"] * len(etiquetas_rank), unidad="COP",
-                    seleccionado=None if modo_total else nombre_dep,
+                    colores=colores_rank_dep, unidad="COP", seleccionado=seleccionado_rank,
                 )
                 st.plotly_chart(fig_rank_dep, width="stretch")
                 st.caption("PIB departamental ÷ población del departamento.")
@@ -942,18 +949,24 @@ elif variable_activa == "PIB":
             promedio_regional = (
                 dep_anio_disp["pib"].sum() / dep_anio_disp["poblacion_total"].sum() if not dep_anio_disp.empty else None
             )
+            seleccionado_disp = None if modo_total else nombre_dep
             if incluir_nacional:
                 # Con las 33 en pantalla, hay que distinguir la Región
                 # Caribe del resto del país -- verde para el Caribe, amarillo
                 # para el departamento activo en el mapa (ninguno en modo
                 # Total, ahí ya están todos resaltados).
-                seleccionado_disp = None if modo_total else nombre_dep
                 color_disp = [
                     "#f5c518" if d == seleccionado_disp else ("#22a559" if d in caribe else "#2a78d6")
                     for d in datos_disp["nombre_departamento"]
                 ]
             else:
-                color_disp = "#2a78d6"
+                # Con solo los 7 del Caribe en pantalla no hace falta
+                # distinguir nada más que el departamento activo -- mismo
+                # amarillo de siempre, azul el resto.
+                color_disp = [
+                    "#f5c518" if d == seleccionado_disp else "#2a78d6"
+                    for d in datos_disp["nombre_departamento"]
+                ]
             # Rango fijo del eje X calculado sobre TODOS los años (no solo
             # anio_sel) -- si el eje se reajustara con cada año, la
             # animación de "deslizar" (ver build_dispersion_municipios) se
