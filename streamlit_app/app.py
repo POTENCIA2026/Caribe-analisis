@@ -216,17 +216,15 @@ def _tarjeta_funcionario(nombre, descripcion_cargo, partido, periodo):
 
 def _seccion_funcionario(personas, columna_nombre, descripcion_cargo, subtitulo):
     """Sección completa del gobernador/alcalde, con un tab por persona
-    registrada (personas, ya ordenado con la vigente primero) cuando hay
-    más de una -- ej. un gobernador destituido y quien lo reemplazó -- y
-    sin tabs cuando solo hay una, que es el caso normal. "vigente" se
-    etiqueta "Actual"; el resto, "Electo originalmente" para la primera
-    persona (orden mínimo) y su propio período para cualquier otra
-    intermedia (poco común, pero por si en algún momento hay más de dos)."""
+    registrada (personas, ya ordenado con la vigente primero y de ahí en
+    más recientemente-electo a más antiguo) cuando hay más de una -- ej.
+    un gobernador del periodo pasado, o uno destituido en este periodo y
+    quien lo reemplazó -- y sin tabs cuando solo hay una, que es el caso
+    normal."""
     if personas.empty:
         return
     st.subheader(subtitulo)
     filas = list(personas.itertuples(index=False))
-    orden_minimo = min(fila.orden for fila in filas)
 
     def _mostrar(fila):
         _tarjeta_funcionario(getattr(fila, columna_nombre), descripcion_cargo, fila.partido, fila.periodo)
@@ -234,11 +232,22 @@ def _seccion_funcionario(personas, columna_nombre, descripcion_cargo, subtitulo)
     if len(filas) == 1:
         _mostrar(filas[0])
     else:
+        # etiqueta_tab es explícita, ver gobernadores_departamentales.csv --
+        # si el CSV todavía no la tiene (ej. alcaldes_municipales.csv, que
+        # por ahora nunca llega a tener más de una persona por municipio),
+        # se cae a una etiqueta genérica en vez de fallar.
         etiquetas = [
-            "Actual" if fila.vigente else ("Electo originalmente" if fila.orden == orden_minimo else fila.periodo)
+            getattr(fila, "etiqueta_tab", None) or ("Actual" if fila.vigente else fila.periodo)
             for fila in filas
         ]
-        for tab, fila in zip(st.tabs(etiquetas), filas):
+        # key único por descripcion_cargo (incluye el departamento/municipio,
+        # ej. "Gobernador(a) de BOLÍVAR") y default="Actual" -- sin esto,
+        # dos departamentos que comparten una etiqueta idéntica (ej. los dos
+        # tienen un tab "Período 2020-2023") quedan tratados como el MISMO
+        # widget de Streamlit, y cambiar de departamento sin tocar el tab
+        # deja seleccionada esa etiqueta en vez de volver a "Actual".
+        tabs_funcionario = st.tabs(etiquetas, key=f"tabs_{descripcion_cargo}", default="Actual")
+        for tab, fila in zip(tabs_funcionario, filas):
             with tab:
                 _mostrar(fila)
 
@@ -1483,12 +1492,12 @@ elif variable_activa == "Composición Política":
         if es_concejo:
             personas = alcaldes_municipales[
                 alcaldes_municipales["nombre_municipio"] == municipio_actual
-            ].sort_values(["vigente", "orden"], ascending=[False, True])
+            ].sort_values(["vigente", "orden"], ascending=[False, False])
             _seccion_funcionario(personas, "nombre_alcalde", f"Alcalde(sa) de {municipio_actual}", "Alcalde")
         elif not modo_total:
             personas = gobernadores_departamentales[
                 gobernadores_departamentales["nombre_departamento"] == nombre_dep
-            ].sort_values(["vigente", "orden"], ascending=[False, True])
+            ].sort_values(["vigente", "orden"], ascending=[False, False])
             _seccion_funcionario(personas, "nombre_gobernador", f"Gobernador(a) de {nombre_dep}", "Gobernador")
 
         st.subheader("Concejo" if es_concejo else "Asamblea")
