@@ -2,6 +2,10 @@
 
 Ejecutar con:  streamlit run streamlit_app/app.py
 """
+import json
+import urllib.parse
+import urllib.request
+
 import pandas as pd
 import streamlit as st
 from streamlit_plotly_events import plotly_events
@@ -63,6 +67,7 @@ geih_tasas = data["geih_tasas"]
 geih_ocupados_rama = data["geih_ocupados_rama"]
 composicion_asamblea = data["composicion_asamblea"]
 composicion_concejo = data["composicion_concejo"]
+gobernadores_departamentales = data["gobernadores_departamentales"]
 capitales = data["capitales"]
 pilares_disponibles = data["pilares_disponibles"]
 departamentos_pais = data["departamentos_pais"]
@@ -109,6 +114,49 @@ def _diferir_rerun():
     click que necesite un rerun pasa por acá en vez de llamar st.rerun()
     directo, precisamente para evitar ese problema."""
     st.session_state["_rerun_diferido"] = True
+
+
+@st.cache_data(ttl=60 * 60 * 24, show_spinner=False)
+def _resumen_wikipedia(nombre_busqueda):
+    """Busca en Wikipedia (es) el artículo que mejor calce con nombre_busqueda
+    y devuelve su introducción -- el texto ANTES del primer subtítulo -- junto
+    con la miniatura de su foto, o None si no hay artículo o falla la
+    conexión.
+
+    Se usa "generator=search" en vez de pedir el título exacto porque el
+    nombre completo de una persona (ej. "Yamil Hernando Arana Padauí") casi
+    nunca es el título real de su artículo (ej. "Yamil Arana") -- así
+    Wikipedia encuentra el artículo correcto sin tener que mantener a mano
+    el título exacto de cada quien. Cacheado 24 horas para no golpear la API
+    en cada rerun del tablero."""
+    parametros = {
+        "action": "query", "format": "json", "generator": "search",
+        "gsrsearch": nombre_busqueda, "gsrlimit": 1,
+        "prop": "extracts|pageimages|info", "exintro": 1, "explaintext": 1,
+        "piprop": "thumbnail", "pithumbsize": 300, "inprop": "url", "redirects": 1,
+    }
+    url = "https://es.wikipedia.org/w/api.php?" + urllib.parse.urlencode(parametros)
+    peticion = urllib.request.Request(
+        url, headers={"User-Agent": "TableroCaribe/1.0 (panel del Caribe colombiano, uso educativo)"}
+    )
+    try:
+        with urllib.request.urlopen(peticion, timeout=6) as respuesta:
+            datos = json.loads(respuesta.read().decode("utf-8"))
+    except Exception:
+        return None
+    paginas = datos.get("query", {}).get("pages") or {}
+    if not paginas:
+        return None
+    pagina = next(iter(paginas.values()))
+    extracto = (pagina.get("extract") or "").strip()
+    if not extracto:
+        return None
+    return {
+        "titulo": pagina.get("title"),
+        "extracto": extracto,
+        "foto_url": (pagina.get("thumbnail") or {}).get("source"),
+        "url": pagina.get("fullurl"),
+    }
 
 
 def _grafico_linea_con_click_anio(fig, key, anios_serie, anio_sel):
@@ -1327,6 +1375,33 @@ elif variable_activa == "Composición Política":
         opacidades_wedge = [1.0 if n == partido_actual else 0.15 for n in nombres_mostrar] if partido_actual else None
 
         with col_izq:
+            # El gobernador es una figura departamental -- no tiene sentido
+            # en la vista combinada de la Región Caribe (serían 7 personas
+            # distintas) ni en un concejo municipal (eso es un alcalde, otro
+            # cargo). Solo se muestra al ver la asamblea de UN departamento.
+            if not es_concejo and not modo_total:
+                fila_gob = gobernadores_departamentales[
+                    gobernadores_departamentales["nombre_departamento"] == nombre_dep
+                ]
+                if not fila_gob.empty:
+                    fila_gob = fila_gob.iloc[0]
+                    info_wiki = _resumen_wikipedia(fila_gob["nombre_gobernador"])
+                    col_foto, col_texto = st.columns([1, 3])
+                    with col_foto:
+                        if info_wiki and info_wiki.get("foto_url"):
+                            st.image(info_wiki["foto_url"], width=140)
+                    with col_texto:
+                        st.markdown(f"**{fila_gob['nombre_gobernador']}** — Gobernador(a) de {nombre_dep}")
+                        st.caption(f"{fila_gob['partido']} · {fila_gob['periodo']}")
+                        if info_wiki:
+                            st.write(info_wiki["extracto"])
+                            if info_wiki.get("url"):
+                                st.caption(f"[Ver artículo completo en Wikipedia]({info_wiki['url']})")
+                        else:
+                            st.caption(
+                                "Sin artículo disponible en Wikipedia por ahora (o no se pudo conectar)."
+                            )
+                    st.divider()
             if partido_actual:
                 # Volver a hacer click en la misma barra no siempre dispara
                 # un nuevo evento de selección (Plotly no reenvía un valor
