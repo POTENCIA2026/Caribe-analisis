@@ -214,42 +214,23 @@ def _tarjeta_funcionario(nombre, descripcion_cargo, partido, periodo):
             st.caption("Sin artículo disponible en Wikipedia por ahora (o no se pudo conectar).")
 
 
-def _seccion_funcionario(personas, columna_nombre, descripcion_cargo, subtitulo):
-    """Sección completa del gobernador/alcalde, con un tab por persona
-    registrada (personas, ya ordenado con la vigente primero y de ahí en
-    más recientemente-electo a más antiguo) cuando hay más de una -- ej.
-    un gobernador del periodo pasado, o uno destituido en este periodo y
-    quien lo reemplazó -- y sin tabs cuando solo hay una, que es el caso
-    normal."""
+def _seccion_funcionario(personas, columna_nombre, descripcion_cargo, subtitulo, anio_sel):
+    """Sección completa del gobernador/alcalde para el año activo en el
+    slider -- entre las personas registradas (algunas cubren el periodo
+    2020-2023, otras 2024-2027, y puede haber más de una dentro de un
+    mismo periodo si hubo una destitución de por medio), se elige la que
+    tenga a anio_sel entre su anio_inicio y anio_fin. Si dos se superponen
+    para ese año (ej. el año exacto de un reemplazo a mitad de periodo),
+    se prefiere la de mayor "orden" (la más reciente de las dos)."""
     if personas.empty:
         return
     st.subheader(subtitulo)
-    filas = list(personas.itertuples(index=False))
-
-    def _mostrar(fila):
-        _tarjeta_funcionario(getattr(fila, columna_nombre), descripcion_cargo, fila.partido, fila.periodo)
-
-    if len(filas) == 1:
-        _mostrar(filas[0])
-    else:
-        # etiqueta_tab es explícita, ver gobernadores_departamentales.csv --
-        # si el CSV todavía no la tiene (ej. alcaldes_municipales.csv, que
-        # por ahora nunca llega a tener más de una persona por municipio),
-        # se cae a una etiqueta genérica en vez de fallar.
-        etiquetas = [
-            getattr(fila, "etiqueta_tab", None) or ("Actual" if fila.vigente else fila.periodo)
-            for fila in filas
-        ]
-        # key único por descripcion_cargo (incluye el departamento/municipio,
-        # ej. "Gobernador(a) de BOLÍVAR") y default="Actual" -- sin esto,
-        # dos departamentos que comparten una etiqueta idéntica (ej. los dos
-        # tienen un tab "Período 2020-2023") quedan tratados como el MISMO
-        # widget de Streamlit, y cambiar de departamento sin tocar el tab
-        # deja seleccionada esa etiqueta en vez de volver a "Actual".
-        tabs_funcionario = st.tabs(etiquetas, key=f"tabs_{descripcion_cargo}", default="Actual")
-        for tab, fila in zip(tabs_funcionario, filas):
-            with tab:
-                _mostrar(fila)
+    filas = [f for f in personas.itertuples(index=False) if f.anio_inicio <= anio_sel <= f.anio_fin]
+    if not filas:
+        st.caption(f"No hay dato de {subtitulo.lower()} registrado para {anio_sel}.")
+        return
+    fila = max(filas, key=lambda f: f.orden)
+    _tarjeta_funcionario(getattr(fila, columna_nombre), descripcion_cargo, fila.partido, fila.periodo)
 
 
 def _grafico_linea_con_click_anio(fig, key, anios_serie, anio_sel):
@@ -1471,21 +1452,17 @@ elif variable_activa == "Composición Política":
         # vista combinada de la Región Caribe (serían 7 personas distintas)
         # ni en un concejo municipal (eso es un alcalde, otro cargo). El
         # alcalde, al revés, solo aplica a los municipios que ya tienen su
-        # concejo registrado (por ahora, las 7 capitales). Ambos van con un
-        # tab por persona cuando hay más de una registrada (ej. un
-        # gobernador destituido y quien lo reemplazó, ver
-        # gobernadores_departamentales.csv) -- la vigente siempre va primero
-        # (el tab que se ve por defecto).
+        # concejo registrado (por ahora, las 7 capitales). Cuando hay más de
+        # una persona registrada (ej. un periodo pasado, o un gobernador
+        # destituido y quien lo reemplazó), _seccion_funcionario elige sola
+        # la que corresponda al año activo en el slider -- no hace falta
+        # elegir a mano.
         if es_concejo:
-            personas = alcaldes_municipales[
-                alcaldes_municipales["nombre_municipio"] == municipio_actual
-            ].sort_values(["vigente", "orden"], ascending=[False, False])
-            _seccion_funcionario(personas, "nombre_alcalde", f"Alcalde(sa) de {municipio_actual}", "Alcalde")
+            personas = alcaldes_municipales[alcaldes_municipales["nombre_municipio"] == municipio_actual]
+            _seccion_funcionario(personas, "nombre_alcalde", f"Alcalde(sa) de {municipio_actual}", "Alcalde", anio_sel)
         elif not modo_total:
-            personas = gobernadores_departamentales[
-                gobernadores_departamentales["nombre_departamento"] == nombre_dep
-            ].sort_values(["vigente", "orden"], ascending=[False, False])
-            _seccion_funcionario(personas, "nombre_gobernador", f"Gobernador(a) de {nombre_dep}", "Gobernador")
+            personas = gobernadores_departamentales[gobernadores_departamentales["nombre_departamento"] == nombre_dep]
+            _seccion_funcionario(personas, "nombre_gobernador", f"Gobernador(a) de {nombre_dep}", "Gobernador", anio_sel)
 
         st.subheader("Concejo" if es_concejo else "Asamblea")
         # Columnas propias (no las col_izq/col_der de toda la página) --
